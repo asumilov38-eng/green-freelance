@@ -227,7 +227,7 @@ function showBannerModal() {
         let img = '';
         if (bf) img = await uploadImage(bf, 'banners/' + Date.now());
         await supabase.from('banner').insert({ title: t, description: d, price: p, telegram_link: l, image: img, position: STATE.banners.length, expires_at: new Date(Date.now() + 86400000).toISOString() });
-        closeModal(); loadAllData().then(() => renderHome());
+        closeModal(); loadBanners().then(() => renderHome());
     });
 }
 
@@ -243,7 +243,7 @@ function renderNav(screen) {
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>',
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
     ];
-    const labels = ['Главная','Биржа','Создать','Мои','Профиль'];
+    const labels = ['Главная','Биржа','','Мои','Профиль'];
     const idx = screens.indexOf(screen);
     let html = '';
     for (let i = 0; i < 5; i++) {
