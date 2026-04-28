@@ -34,12 +34,7 @@ async function loadBanners() {
     STATE.banners = data || [];
 }
 
-async function loadCategories() {
-    const { data } = await supabase.from('categories').select('*');
-    STATE.categories = data || [];
-}
-
-async function loadAllData() { await Promise.all([loadTasks(), loadBanners(), loadCategories()]); }
+async function loadAllData() { await Promise.all([loadTasks(), loadBanners()]); }
 
 async function getUserById(id) {
     if (!id) return null;
@@ -182,7 +177,7 @@ function logout() { STATE.isLoggedIn = false; STATE.user = null; localStorage.re
 function showModal(title, html) {
     document.querySelectorAll('.modal-overlay').forEach(e => e.remove());
     const o = document.createElement('div'); o.className = 'modal-overlay';
-    o.innerHTML = `<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h2 style="margin:0;">${title}</h2><span style="font-size:24px;cursor:pointer;color:#999;" onclick="closeModal()">✕</span></div>${html}</div>`;
+    o.innerHTML = `<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h2 style="margin:0;">${title}</h2><span style="font-size:24px;cursor:pointer;color:#999;line-height:1;" onclick="closeModal()">✕</span></div>${html}</div>`;
     o.addEventListener('click', e => { if (e.target === o) closeModal(); });
     document.body.appendChild(o);
 }
@@ -190,7 +185,7 @@ function closeModal() { document.querySelectorAll('.modal-overlay').forEach(e =>
 
 function showCreateModal() {
     showModal('Создать задание', `
-        <div class="input-group"><label class="input-label">Обложка</label><div class="image-upload-area" id="cover-area" style="height:120px;"><div class="image-upload-placeholder">Загрузить</div></div><input type="file" id="cover-input" accept="image/*" style="display:none;"></div>
+        <div class="input-group"><label class="input-label">Обложка</label><div class="image-upload-area" id="cover-area" style="height:140px;"><div class="image-upload-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="#bbb" width="28"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div style="margin-top:4px;">Загрузить обложку</div></div></div><input type="file" id="cover-input" accept="image/*" style="display:none;"></div>
         <div class="input-group"><label class="input-label">Название</label><input class="input-field" id="mt-title" maxlength="200"></div>
         <div class="input-group"><label class="input-label">Описание</label><textarea class="input-field" id="mt-desc" rows="3" maxlength="2000"></textarea></div>
         <div class="input-group"><label class="input-label">Цена (от 5₽)</label><input class="input-field" id="mt-price" type="number" min="5" placeholder="5000"></div>
@@ -207,13 +202,13 @@ function showCreateModal() {
         let cover = '';
         if (cf) cover = await uploadImage(cf, 'covers/' + Date.now());
         await supabase.from('tasks').insert({ title: t, description: d, price: p, cover, customer_id: STATE.user.id, status: 'open' });
-        closeModal(); loadTasks().then(() => renderHome());
+        closeModal(); loadAllData().then(() => renderHome());
     });
 }
 
 function showBannerModal() {
     showModal('Добавить баннер', `
-        <div class="input-group"><label class="input-label">Изображение</label><div class="image-upload-area" id="b-img" style="height:100px;"><div class="image-upload-placeholder">Загрузить</div></div><input type="file" id="b-img-input" accept="image/*" style="display:none;"></div>
+        <div class="input-group"><label class="input-label">Изображение</label><div class="image-upload-area" id="b-img" style="height:120px;"><div class="image-upload-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="#bbb" width="28"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div style="margin-top:4px;">Загрузить</div></div></div><input type="file" id="b-img-input" accept="image/*" style="display:none;"></div>
         <div class="input-group"><label class="input-label">Название</label><input class="input-field" id="mb-title"></div>
         <div class="input-group"><label class="input-label">Описание</label><textarea class="input-field" id="mb-desc" rows="2"></textarea></div>
         <div class="input-group"><label class="input-label">Цена (от 5₽)</label><input class="input-field" id="mb-price" type="number" min="5" placeholder="50"></div>
@@ -232,122 +227,186 @@ function showBannerModal() {
         let img = '';
         if (bf) img = await uploadImage(bf, 'banners/' + Date.now());
         await supabase.from('banner').insert({ title: t, description: d, price: p, telegram_link: l, image: img, position: STATE.banners.length, expires_at: new Date(Date.now() + 86400000).toISOString() });
-        closeModal(); loadBanners().then(() => renderBannerManagement());
+        closeModal(); loadAllData().then(() => renderHome());
+    });
+}
+
+// ==========================================
+// НАВИГАЦИЯ (фиксированная, без дрожания)
+// ==========================================
+function renderNav(screen) {
+    const screens = ['home','birzha','create','mytasks','profile'];
+    const icons = [
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+    ];
+    const labels = ['Главная','Биржа','Создать','Мои','Профиль'];
+    const idx = screens.indexOf(screen);
+    let html = '';
+    for (let i = 0; i < 5; i++) {
+        const isCenter = i === 2;
+        html += `<button class="nav-btn ${isCenter ? 'nav-btn-center' : ''} ${i === idx ? 'active' : ''}" data-screen="${screens[i]}">${icons[i]}${isCenter ? '' : `<span>${labels[i]}</span>`}</button>`;
+    }
+    return `<div class="bottom-nav">${html}</div>`;
+}
+
+function bindNav(screen) {
+    document.querySelectorAll('.nav-btn').forEach(b => {
+        b.addEventListener('click', () => {
+            const s = b.dataset.screen;
+            if (s === 'home') renderHome();
+            else if (s === 'birzha') renderBirzha();
+            else if (s === 'create') showCreateModal();
+            else if (s === 'mytasks') renderMyTasks();
+            else if (s === 'profile') showProfile();
+        });
     });
 }
 
 async function renderHome() {
     STATE.currentScreen = 'home'; stopBannerCarousel();
+    await loadAllData(); await deleteExpiredBanners();
     const u = STATE.user;
     const rating = await getUserRating(u.id);
-    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${BUCKET_URL}${STATE.banners[0].image}">`:''}<div class="sticky-banner-body"><div class="sticky-banner-title">${escapeHTML(STATE.banners[0].title)}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0].description)}</div><div class="sticky-banner-price-row"><div class="sticky-banner-price">${formatPrice(STATE.banners[0].price)} ₽</div><button class="sticky-banner-btn">ПЕРЕЙТИ</button></div></div></div>` : '';
+    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${BUCKET_URL}${STATE.banners[0].image}" alt="">`:''}<div class="sticky-banner-body"><div class="sticky-banner-title">${escapeHTML(STATE.banners[0].title)}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0].description)}</div><div class="sticky-banner-price-row"><div class="sticky-banner-price">${formatPrice(STATE.banners[0].price)} ₽</div><button class="sticky-banner-btn">ПЕРЕЙТИ</button></div></div></div>` : '';
     document.getElementById('app').innerHTML = `<div class="app-container">
         ${bannerHTML}
         <div class="user-header"><div class="user-header-top"><div class="user-avatar" id="btn-profile">${u.avatar?`<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:15px;object-fit:cover;">`:u.username[0].toUpperCase()}</div><div class="user-greeting"><div class="user-name">${escapeHTML(u.username)}</div><div class="user-role-badge">${u.role==='executor'?'Исполнитель':u.role==='customer'?'Заказчик':'Исполнитель и заказчик'}</div></div><div class="user-rating-mini">★ ${rating}</div></div></div>
         <div class="actions-grid">
             <div class="action-card" id="btn-create"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="action-card-title">Создать задание</div></div>
             <div class="action-card" id="btn-my-profile"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div><div class="action-card-title">Мой профиль</div></div>
-            ${isCreator()?`<div class="action-card" id="btn-banners"><div class="action-card-icon" style="background:#4ADE80;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div><div class="action-card-title">Баннеры</div></div>`:''}
+            ${isCreator()?`<div class="action-card" id="btn-banners"><div class="action-card-icon" style="background:#4ADE80;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="action-card-title">Баннеры</div></div>`:''}
         </div>
-        <div class="bottom-nav">
-            <button class="nav-btn active">Главная</button>
-            <button class="nav-btn">Биржа</button>
-            <button class="nav-btn nav-btn-center" id="btn-create-center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-            <button class="nav-btn">Мои</button>
-            <button class="nav-btn">Профиль</button>
-        </div>
+        ${renderNav('home')}
     </div>`;
-    if (STATE.banners.length>1) startBannerCarousel();
-    document.getElementById('btn-profile')?.addEventListener('click',()=>showProfile());
-    document.getElementById('btn-my-profile')?.addEventListener('click',()=>showProfile());
-    document.getElementById('btn-create')?.addEventListener('click',showCreateModal);
-    document.getElementById('btn-create-center')?.addEventListener('click',showCreateModal);
-    document.getElementById('btn-banners')?.addEventListener('click',renderBannerManagement);
-    document.querySelectorAll('.nav-btn').forEach((b,i)=>{b.addEventListener('click',()=>{if(i===0)renderHome();else if(i===1)renderBirzha();else if(i===2)showCreateModal();else if(i===3)renderMyTasks();else if(i===4)showProfile();});});
+    bindNav('home');
+    if (STATE.banners.length > 1) startBannerCarousel();
+    document.getElementById('btn-profile')?.addEventListener('click', () => showProfile());
+    document.getElementById('btn-my-profile')?.addEventListener('click', () => showProfile());
+    document.getElementById('btn-create')?.addEventListener('click', showCreateModal);
+    document.getElementById('btn-banners')?.addEventListener('click', renderBannerManagement);
 }
 
 async function renderBirzha() {
-    STATE.currentScreen='birzha'; stopBannerCarousel();
+    STATE.currentScreen = 'birzha'; stopBannerCarousel();
     await loadTasks();
-    const tasks = STATE.tasks.filter(t=>t.customer_id!==STATE.user?.id);
-    let th='';
-    for(const t of tasks){const c=await getUserById(t.customer_id);const cr=c?await getUserRating(c.id):0;
-        th+=`<div class="task-card" data-id="${t.id}" style="position:relative;overflow:hidden;${t.cover?'min-height:120px;':''}">${t.cover?`<img src="${BUCKET_URL}${t.cover}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.5);z-index:0;">`:''}<div style="position:relative;z-index:1;"><div class="task-top-row"><div class="task-title" style="${t.cover?'color:white;':''}">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div><div class="task-desc" style="${t.cover?'color:rgba(255,255,255,0.8);':''}">${escapeHTML(t.description)}</div><div class="task-meta"><div class="task-customer"><div class="customer-avatar-mini">${c?.avatar?`<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">`:(c?.username||'?')[0].toUpperCase()}</div><span class="customer-name">${escapeHTML(c?.username||'Пользователь')}</span><span style="color:#F59E0B;font-size:12px;">★ ${cr}</span></div><span class="task-date">${formatDate(t.created_at)}</span></div></div></div>`;}
-    document.getElementById('app').innerHTML=`<div class="app-container">
+    const tasks = STATE.tasks;
+    let th = '';
+    for (const t of tasks) {
+        const c = await getUserById(t.customer_id);
+        const cr = c ? await getUserRating(c.id) : 0;
+        th += `<div class="task-card" data-id="${t.id}" style="position:relative;overflow:hidden;${t.cover ? 'min-height:130px;' : ''}">
+            ${t.cover ? `<img src="${BUCKET_URL}${t.cover}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.35);z-index:0;">` : ''}
+            <div style="position:relative;z-index:1;">
+                <div class="task-top-row"><div class="task-title" style="${t.cover ? 'color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);' : ''}">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div>
+                <div class="task-desc" style="${t.cover ? 'color:rgba(255,255,255,0.85);' : ''}">${escapeHTML(t.description)}</div>
+                <div class="task-meta"><div class="task-customer"><div class="customer-avatar-mini">${c?.avatar ? `<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">` : (c?.username || '?')[0].toUpperCase()}</div><span class="customer-name" style="${t.cover ? 'color:rgba(255,255,255,0.9);' : ''}">${escapeHTML(c?.username || 'Пользователь')}</span><span style="color:#F59E0B;font-size:12px;">★ ${cr}</span></div><span class="task-date" style="${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}">${formatDate(t.created_at)}</span></div>
+            </div>
+        </div>`;
+    }
+    document.getElementById('app').innerHTML = `<div class="app-container">
         <div class="section-header"><div class="section-title">Все задания</div><div class="task-count">${tasks.length} заданий</div></div>
-        <div>${th||'<div class="empty-state">Нет заданий</div>'}</div>
-        <div class="bottom-nav"><button class="nav-btn" onclick="renderHome()">Главная</button><button class="nav-btn active">Биржа</button><button class="nav-btn nav-btn-center" onclick="showCreateModal()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><button class="nav-btn" onclick="renderMyTasks()">Мои</button><button class="nav-btn" onclick="showProfile()">Профиль</button></div>
+        <div>${th || '<div class="empty-state">Нет заданий</div>'}</div>
+        ${renderNav('birzha')}
     </div>`;
-    document.querySelectorAll('.task-card').forEach(c=>c.addEventListener('click',()=>showTaskDetail(c.dataset.id)));
+    bindNav('birzha');
+    document.querySelectorAll('.task-card').forEach(c => c.addEventListener('click', () => showTaskDetail(c.dataset.id)));
 }
 
 async function renderMyTasks() {
-    STATE.currentScreen='mytasks'; stopBannerCarousel();
+    STATE.currentScreen = 'mytasks'; stopBannerCarousel();
     await loadTasks();
-    let th='';
-    for(const t of STATE.myTasks){th+=`<div class="task-card"><div class="task-top-row"><div class="task-title">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div><div class="task-desc">${escapeHTML(t.description)}</div><div class="task-meta"><span class="task-date">${formatDate(t.created_at)}</span><span style="background:#fef2f2;color:#ef4444;padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;" class="btn-del" data-id="${t.id}">Удалить</span></div></div>`;}
-    document.getElementById('app').innerHTML=`<div class="app-container">
+    let th = '';
+    for (const t of STATE.myTasks) {
+        th += `<div class="task-card" style="position:relative;overflow:hidden;${t.cover ? 'min-height:130px;' : ''}">
+            ${t.cover ? `<img src="${BUCKET_URL}${t.cover}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.35);z-index:0;">` : ''}
+            <div style="position:relative;z-index:1;">
+                <div class="task-top-row"><div class="task-title" style="${t.cover ? 'color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);' : ''}">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div>
+                <div class="task-desc" style="${t.cover ? 'color:rgba(255,255,255,0.85);' : ''}">${escapeHTML(t.description)}</div>
+                <div class="task-meta"><span class="task-date" style="${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}">${formatDate(t.created_at)}</span><span style="background:#fef2f2;color:#ef4444;padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;" class="btn-del" data-id="${t.id}">Удалить</span></div>
+            </div>
+        </div>`;
+    }
+    document.getElementById('app').innerHTML = `<div class="app-container">
         <div class="user-header"><div class="user-name" style="color:white;font-weight:700;font-size:18px;">Мои задания</div></div>
-        <div>${th||'<div class="empty-state">Нет заданий</div>'}</div>
-        <div class="bottom-nav"><button class="nav-btn" onclick="renderHome()">Главная</button><button class="nav-btn" onclick="renderBirzha()">Биржа</button><button class="nav-btn nav-btn-center" onclick="showCreateModal()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><button class="nav-btn active">Мои</button><button class="nav-btn" onclick="showProfile()">Профиль</button></div>
+        <div>${th || '<div class="empty-state">Нет заданий</div>'}</div>
+        ${renderNav('mytasks')}
     </div>`;
-    document.querySelectorAll('.btn-del').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();if(confirm('Удалить?')){await supabase.from('tasks').delete().eq('id',b.dataset.id);await loadTasks();renderMyTasks();}}));
+    bindNav('mytasks');
+    document.querySelectorAll('.btn-del').forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); if (confirm('Удалить?')) { await supabase.from('tasks').delete().eq('id', b.dataset.id); await loadTasks(); renderMyTasks(); } }));
 }
 
 async function renderBannerManagement() {
-    STATE.currentScreen='banners'; stopBannerCarousel();
+    STATE.currentScreen = 'banners'; stopBannerCarousel();
     await loadBanners();
-    const active = STATE.banners.filter(b=>new Date(b.expires_at)>new Date());
-    let bh='';
-    for(const b of active){bh+=`<div class="task-card"><div class="task-top-row"><div class="task-title">${escapeHTML(b.title)}</div><div class="task-price">${formatPrice(b.price)} ₽</div></div><div class="task-desc">${escapeHTML(b.description)}<br>${b.telegram_link?`<span style="color:#4ADE80;">@${b.telegram_link.replace('https://t.me/','')}</span>`:''}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><span style="color:#F59E0B;font-weight:600;">⏳ ${formatTimeLeft(b.expires_at)}</span><button class="btn-del" data-id="${b.id}" style="background:#ef4444;color:white;border:none;padding:6px 12px;border-radius:8px;font-size:12px;">Удалить</button></div></div>`;}
-    document.getElementById('app').innerHTML=`<div class="app-container">
+    const active = STATE.banners.filter(b => new Date(b.expires_at) > new Date());
+    let bh = '';
+    for (const b of active) {
+        bh += `<div class="task-card"><div class="task-top-row"><div class="task-title">${escapeHTML(b.title)}</div><div class="task-price">${formatPrice(b.price)} ₽</div></div><div class="task-desc">${escapeHTML(b.description)}<br>${b.telegram_link ? `<span style="color:#4ADE80;">@${b.telegram_link.replace('https://t.me/','')}</span>` : ''}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><span style="color:#F59E0B;font-weight:600;">${formatTimeLeft(b.expires_at)}</span><button class="btn-del" data-id="${b.id}" style="background:#ef4444;color:white;border:none;padding:6px 12px;border-radius:8px;font-size:12px;">Удалить</button></div></div>`;
+    }
+    document.getElementById('app').innerHTML = `<div class="app-container">
         <button class="btn btn-primary" id="btn-add" style="margin-bottom:12px;">+ ДОБАВИТЬ БАННЕР</button>
-        <div>${bh||'<div class="empty-state">Нет баннеров</div>'}</div>
-        <div class="bottom-nav"><button class="nav-btn" onclick="renderHome()">Главная</button><button class="nav-btn" onclick="renderBirzha()">Биржа</button><button class="nav-btn nav-btn-center" onclick="showCreateModal()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><button class="nav-btn" onclick="renderMyTasks()">Мои</button><button class="nav-btn" onclick="showProfile()">Профиль</button></div>
+        <div>${bh || '<div class="empty-state">Нет баннеров</div>'}</div>
+        ${renderNav('profile')}
     </div>`;
-    document.getElementById('btn-add')?.addEventListener('click',showBannerModal);
-    document.querySelectorAll('.btn-del').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();if(confirm('Удалить?')){await supabase.from('banner').delete().eq('id',b.dataset.id);await loadBanners();renderBannerManagement();}}));
+    bindNav('profile');
+    document.getElementById('btn-add')?.addEventListener('click', showBannerModal);
+    document.querySelectorAll('.btn-del').forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); if (confirm('Удалить?')) { await supabase.from('banner').delete().eq('id', b.dataset.id); await loadBanners(); renderBannerManagement(); } }));
 }
 
-async function showTaskDetail(taskId){
-    const t=STATE.tasks.find(x=>x.id==taskId);if(!t)return;
-    const c=await getUserById(t.customer_id);const r=c?await getUserRating(c.id):0;
-    showModal(escapeHTML(t.title),`<div style="font-size:24px;font-weight:800;color:#16A34A;margin:8px 0;">${formatPrice(t.price)} ₽</div><p style="color:#555;line-height:1.6;margin-bottom:12px;">${escapeHTML(t.description)}</p><div style="display:flex;align-items:center;gap:10px;padding:10px;background:#F0FDF4;border-radius:12px;margin-bottom:12px;cursor:pointer;" id="btn-cust"><div class="customer-avatar-mini" style="width:34px;height:34px;">${c?.avatar?`<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">`:(c?.username||'?')[0].toUpperCase()}</div><div><div style="font-weight:600;">${escapeHTML(c?.username||'Пользователь')}</div><div style="color:#F59E0B;">★ ${r}</div></div></div><button class="btn btn-primary" id="btn-resp">ОТКЛИКНУТЬСЯ</button>`);
-    document.getElementById('btn-resp')?.addEventListener('click',()=>{closeModal();setTimeout(()=>showProfile(t.customer_id),300);});
-    document.getElementById('btn-cust')?.addEventListener('click',()=>{closeModal();setTimeout(()=>showProfile(t.customer_id),300);});
+async function showTaskDetail(taskId) {
+    const t = STATE.tasks.find(x => x.id == taskId); if (!t) return;
+    const c = await getUserById(t.customer_id);
+    const r = c ? await getUserRating(c.id) : 0;
+    showModal(escapeHTML(t.title), `
+        ${t.cover ? `<div style="width:100%;height:180px;border-radius:12px;overflow:hidden;margin-bottom:12px;"><img src="${BUCKET_URL}${t.cover}" style="width:100%;height:100%;object-fit:cover;"></div>` : ''}
+        <div style="font-size:24px;font-weight:800;color:#16A34A;margin:8px 0;">${formatPrice(t.price)} ₽</div>
+        <p style="color:#555;line-height:1.6;margin-bottom:12px;">${escapeHTML(t.description)}</p>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#F0FDF4;border-radius:12px;margin-bottom:12px;cursor:pointer;" id="btn-cust">
+            <div class="customer-avatar-mini" style="width:34px;height:34px;">${c?.avatar ? `<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">` : (c?.username || '?')[0].toUpperCase()}</div>
+            <div><div style="font-weight:600;">${escapeHTML(c?.username || 'Пользователь')}</div><div style="color:#F59E0B;">★ ${r}</div></div>
+        </div>
+        <button class="btn btn-primary" id="btn-resp">ОТКЛИКНУТЬСЯ</button>
+    `);
+    document.getElementById('btn-resp')?.addEventListener('click', () => { closeModal(); setTimeout(() => showProfile(t.customer_id), 300); });
+    document.getElementById('btn-cust')?.addEventListener('click', () => { closeModal(); setTimeout(() => showProfile(t.customer_id), 300); });
 }
 
-async function showProfile(uid){
-    const u=uid?await getUserById(uid):STATE.user;if(!u)return;
-    const rating=await getUserRating(u.id);
-    const {data:reviews}=await supabase.from('reviews').select('*').eq('user_id',u.id).order('created_at',{ascending:false}).limit(20);
-    let rh='';if(reviews)for(const r of reviews){const rv=await getUserById(r.reviewer_id);rh+=`<div class="review-item"><div class="review-header"><span>${escapeHTML(rv?.username||'Пользователь')}</span><span style="color:#FBBF24;">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span></div>${r.comment?`<div>${escapeHTML(r.comment)}</div>`:''}</div>`;}
-    const self=u.id===STATE.user?.id;
-    showModal('Профиль',`<div class="profile-card">
-        <div class="profile-avatar-large">${u.avatar?`<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:20px;object-fit:cover;">`:u.username[0].toUpperCase()}</div>
+async function showProfile(uid) {
+    const u = uid ? await getUserById(uid) : STATE.user; if (!u) return;
+    const rating = await getUserRating(u.id);
+    const { data: reviews } = await supabase.from('reviews').select('*').eq('user_id', u.id).order('created_at', { ascending: false }).limit(20);
+    let rh = '';
+    if (reviews) for (const r of reviews) { const rv = await getUserById(r.reviewer_id); rh += `<div class="review-item"><div class="review-header"><span>${escapeHTML(rv?.username || 'Пользователь')}</span><span style="color:#FBBF24;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span></div>${r.comment ? `<div>${escapeHTML(r.comment)}</div>` : ''}</div>`; }
+    const self = u.id === STATE.user?.id;
+    showModal('Профиль', `<div class="profile-card">
+        <div class="profile-avatar-large">${u.avatar ? `<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:20px;object-fit:cover;">` : u.username[0].toUpperCase()}</div>
         <div class="profile-name">${escapeHTML(u.username)}</div>
-        <div class="profile-role">${u.role==='executor'?'Исполнитель':u.role==='customer'?'Заказчик':'Исполнитель и заказчик'}</div>
-        ${u.description?`<div class="profile-desc">${escapeHTML(u.description)}</div>`:''}
+        <div class="profile-role">${u.role === 'executor' ? 'Исполнитель' : u.role === 'customer' ? 'Заказчик' : 'Исполнитель и заказчик'}</div>
+        ${u.description ? `<div class="profile-desc">${escapeHTML(u.description)}</div>` : ''}
         <div class="profile-rating-display">★ ${rating}</div>
-        <div style="margin-top:8px;"><span style="background:#F0FDF4;padding:6px 12px;border-radius:8px;">ID: ${u.custom_id||'Нет'}</span></div>
+        <div style="margin-top:8px;"><span style="background:#F0FDF4;padding:6px 12px;border-radius:8px;">ID: ${u.custom_id || 'Нет'}</span></div>
         <div style="margin-top:6px;display:flex;gap:6px;justify-content:center;">
-            <span style="background:#4ADE80;color:white;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-copy">📋 Копировать ID</span>
-            ${u.telegram_username?`<span style="background:#E0F2FE;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-tg">@${u.telegram_username}</span>`:''}
+            <span style="background:#4ADE80;color:white;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-copy">Копировать ID</span>
+            ${u.telegram_username ? `<span style="background:#E0F2FE;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-tg">@${u.telegram_username}</span>` : ''}
         </div>
     </div>
-    <div style="font-weight:700;margin:12px 0;">Отзывы</div>${rh||'<div class="empty-state">Нет отзывов</div>'}
-    ${self?`<button class="btn btn-outline" id="btn-avatar">СМЕНИТЬ АВАТАРКУ</button><button class="btn btn-outline" id="btn-logout" style="color:#ef4444;">ВЫЙТИ</button>`:''}`);
-    document.getElementById('btn-copy')?.addEventListener('click',()=>{navigator.clipboard?.writeText(u.custom_id);alert('ID скопирован: '+u.custom_id);});
-    document.getElementById('btn-tg')?.addEventListener('click',()=>window.open('https://t.me/'+u.telegram_username,'_blank'));
-    document.getElementById('btn-logout')?.addEventListener('click',()=>{closeModal();logout();});
-    document.getElementById('btn-avatar')?.addEventListener('click',()=>{
-        const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
-        inp.addEventListener('change',async e=>{
-            const f=e.target.files[0];if(!f)return;
-            const path=await uploadImage(f,'avatars/'+Date.now());
-            if(path){await supabase.from('users').update({avatar:path}).eq('id',STATE.user.id);STATE.user.avatar=path;localStorage.setItem('gfUser',JSON.stringify(STATE.user));closeModal();showProfile();}
-        });inp.click();
+    <div style="font-weight:700;margin:12px 0;">Отзывы</div>${rh || '<div class="empty-state">Нет отзывов</div>'}
+    ${self ? `<button class="btn btn-outline" id="btn-avatar">СМЕНИТЬ АВАТАРКУ</button><button class="btn btn-outline" id="btn-logout" style="color:#ef4444;">ВЫЙТИ</button>` : ''}`);
+    document.getElementById('btn-copy')?.addEventListener('click', () => { navigator.clipboard?.writeText(u.custom_id); alert('ID скопирован: ' + u.custom_id); });
+    document.getElementById('btn-tg')?.addEventListener('click', () => window.open('https://t.me/' + u.telegram_username, '_blank'));
+    document.getElementById('btn-logout')?.addEventListener('click', () => { closeModal(); logout(); });
+    document.getElementById('btn-avatar')?.addEventListener('click', () => {
+        const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+        inp.addEventListener('change', async e => {
+            const f = e.target.files[0]; if (!f) return;
+            const path = await uploadImage(f, 'avatars/' + Date.now());
+            if (path) { await supabase.from('users').update({ avatar: path }).eq('id', STATE.user.id); STATE.user.avatar = path; localStorage.setItem('gfUser', JSON.stringify(STATE.user)); closeModal(); showProfile(); }
+        }); inp.click();
     });
 }
 
-(async function(){await loadUser();render();})();
+(async function () { await loadUser(); render(); })();
