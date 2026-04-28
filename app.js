@@ -10,7 +10,8 @@ const BUCKET_URL = window.SUPABASE_URL + '/storage/v1/object/public/images/';
 const STATE = {
     isLoggedIn: false, user: null, tasks: [], myTasks: [], usersCache: {},
     banners: [], currentBanner: 0, bannerTimer: null,
-    currentScreen: 'home', searchQuery: '', expandedTaskId: null
+    currentScreen: 'home', searchQuery: '', expandedTaskId: null,
+    tasksPage: 0, tasksPerPage: 10
 };
 
 async function loadUser() {
@@ -89,22 +90,8 @@ function updateBannerDisplay() {
         if (b.image) {
             imgEl.src = BUCKET_URL + b.image;
             imgEl.style.display = 'block';
-            el.querySelector('.sticky-banner-body').style.position = 'relative';
-            el.querySelector('.sticky-banner-body').style.zIndex = '1';
-            const titleEl = el.querySelector('.sticky-banner-title');
-            const descEl = el.querySelector('.sticky-banner-desc');
-            const priceEl = el.querySelector('.sticky-banner-price');
-            if (titleEl) titleEl.style.color = 'white';
-            if (descEl) descEl.style.color = 'rgba(255,255,255,0.85)';
-            if (priceEl) priceEl.style.color = 'white';
         } else {
             imgEl.style.display = 'none';
-            const titleEl = el.querySelector('.sticky-banner-title');
-            const descEl = el.querySelector('.sticky-banner-desc');
-            const priceEl = el.querySelector('.sticky-banner-price');
-            if (titleEl) titleEl.style.color = '';
-            if (descEl) descEl.style.color = '';
-            if (priceEl) priceEl.style.color = '';
         }
     }
     const titleEl = el.querySelector('.sticky-banner-title');
@@ -145,10 +132,7 @@ function render() {
         </div>
         <div class="splash-title">GreenFreelance</div>
         <div class="splash-loader">
-            <div class="splash-cube"></div>
-            <div class="splash-cube"></div>
-            <div class="splash-cube"></div>
-            <div class="splash-cube"></div>
+            <div class="splash-cube"></div><div class="splash-cube"></div><div class="splash-cube"></div><div class="splash-cube"></div>
         </div>
     </div>`;
     STATE.isLoggedIn ? loadAllData().then(() => { deleteExpiredBanners(); renderHome(); }) : renderAuth();
@@ -279,7 +263,7 @@ function bindNav(screen) {
     document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => {
         const s = b.dataset.screen;
         if (s === 'home') renderHome();
-        else if (s === 'birzha') { STATE.searchQuery = ''; renderBirzha(); }
+        else if (s === 'birzha') { STATE.searchQuery = ''; STATE.tasksPage = 0; renderBirzha(); }
         else if (s === 'create') showCreateModal();
         else if (s === 'mytasks') renderMyTasks();
         else if (s === 'profile') showProfile();
@@ -310,11 +294,14 @@ async function renderBirzha() {
     STATE.currentScreen = 'birzha'; stopBannerCarousel();
     await loadBanners(); await loadTasks();
     const tasks = STATE.tasks;
+    const start = STATE.tasksPage * STATE.tasksPerPage;
+    const pageTasks = tasks.slice(0, start + STATE.tasksPerPage);
+    const hasMore = tasks.length > pageTasks.length;
 
-    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner" style="position:relative;overflow:hidden;">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${BUCKET_URL}${STATE.banners[0].image}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.4);z-index:0;">`:''}<div class="sticky-banner-body" style="position:relative;z-index:1;">${STATE.banners[0]?.image?`<div class="sticky-banner-title" style="color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc" style="color:rgba(255,255,255,0.85);">${escapeHTML(STATE.banners[0]?.description||'')}</div>`:`<div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div>`}<div class="sticky-banner-price-row"><div class="sticky-banner-price" style="${STATE.banners[0]?.image?'color:white;':''}">${formatPrice(STATE.banners[0]?.price||0)} ₽</div><button class="sticky-banner-btn" id="btn-banner-go">ПЕРЕЙТИ</button></div></div></div>` : '';
+    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${BUCKET_URL}${STATE.banners[0].image}" alt="">`:''}<div class="sticky-banner-body"><div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div><div class="sticky-banner-price-row"><div class="sticky-banner-price">${formatPrice(STATE.banners[0]?.price||0)} ₽</div><button class="sticky-banner-btn" id="btn-banner-go">ПЕРЕЙТИ</button></div></div></div>` : '';
 
     let th = '';
-    for (const t of tasks) {
+    for (const t of pageTasks) {
         const c = await getUserById(t.customer_id), cr = c ? await getUserRating(c.id) : 0;
         const isExpanded = STATE.expandedTaskId === t.id;
         const descLong = t.description && t.description.length > 120;
@@ -336,12 +323,14 @@ async function renderBirzha() {
         </div>
         <div class="section-header"><div class="section-title">${STATE.searchQuery ? 'Результаты поиска' : 'Все задания'}</div><div class="task-count">${tasks.length} заданий</div></div>
         <div>${th || '<div class="empty-state">Нет заданий</div>'}</div>
+        ${hasMore ? `<div style="text-align:center;padding:12px;"><button class="btn btn-outline" id="btn-load-more" style="width:auto;padding:10px 30px;">ЕЩЁ</button></div>` : ''}
         ${renderNav('birzha')}
     </div>`;
     bindNav('birzha');
 
     document.getElementById('btn-banner-go')?.addEventListener('click', function(e) { e.stopPropagation(); window.open(STATE.banners[STATE.currentBanner]?.telegram_link || 'https://t.me/FBK_MiniBusiness', '_blank'); });
     if (STATE.banners.length > 1) startBannerCarousel();
+    document.getElementById('btn-load-more')?.addEventListener('click', () => { STATE.tasksPage++; renderBirzha(); });
     document.querySelectorAll('.task-card').forEach(c => c.addEventListener('click', function(e) {
         if (e.target.closest('.btn-expand') || e.target.closest('.sticky-banner-btn')) return;
         showTaskDetail(c.dataset.id);
@@ -358,6 +347,7 @@ async function renderBirzha() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(async () => {
             STATE.searchQuery = this.value.trim();
+            STATE.tasksPage = 0;
             await loadTasks();
             renderBirzha();
         }, 400);
