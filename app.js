@@ -236,7 +236,7 @@ function showBannerModal() {
         if (!title) { alert('Введите название!'); return; }
         let img = ''; if (bf) { img = await uploadImage(bf, 'banners/' + Date.now()); if (!img) { alert('Ошибка загрузки изображения!'); return; } }
         await supabase.from('banner').insert({ title, description: desc, price, telegram_link: link, image: img, position: STATE.banners.length, expires_at: new Date(Date.now() + 86400000).toISOString() });
-        closeModal(); loadBanners().then(() => renderHome());
+        console.log('Загруженное фото:', img); closeModal(); loadBanners().then(() => renderHome());
     });
 }
 
