@@ -318,7 +318,7 @@ async function renderBirzha() {
 
     document.getElementById('app').innerHTML = `<div class="app-container">
         ${bannerHTML}
-        <div style="position:sticky;top:0;z-index:10;padding:8px 0;background:#F0FDF4;">
+        <div style="padding:8px 0;">
             <input class="input-field" id="search-input" placeholder="Поиск по ключевым словам..." value="${STATE.searchQuery}">
         </div>
         <div class="section-header"><div class="section-title">${STATE.searchQuery ? 'Результаты поиска' : 'Все задания'}</div><div class="task-count">${tasks.length} заданий</div></div>
