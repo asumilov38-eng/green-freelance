@@ -90,7 +90,15 @@ function updateBannerDisplay() {
     if (descEl) descEl.textContent = b.description;
     const priceEl = el.querySelector('.sticky-banner-price');
     if (priceEl) priceEl.textContent = formatPrice(b.price) + ' ₽';
-    el.onclick = (e) => { if (e.target.closest('.sticky-banner-btn')) window.open(b.telegram_link || 'https://t.me/FBK_MiniBusiness', '_blank'); };
+    
+    // Обновляем кнопку ПЕРЕЙТИ
+    const btnEl = el.querySelector('.sticky-banner-btn');
+    if (btnEl) {
+        btnEl.onclick = function(e) {
+            e.stopPropagation();
+            window.open(b.telegram_link || 'https://t.me/FBK_MiniBusiness', '_blank');
+        };
+    }
 }
 
 async function deleteExpiredBanners() {
@@ -289,9 +297,8 @@ async function renderHome() {
     await loadAllData(); await deleteExpiredBanners();
     const u = STATE.user;
     const rating = await getUserRating(u.id);
-    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${BUCKET_URL}${STATE.banners[0].image}" alt="">`:''}<div class="sticky-banner-body"><div class="sticky-banner-title">${escapeHTML(STATE.banners[0].title)}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0].description)}</div><div class="sticky-banner-price-row"><div class="sticky-banner-price">${formatPrice(STATE.banners[0].price)} ₽</div><button class="sticky-banner-btn">ПЕРЕЙТИ</button></div></div></div>` : '';
+    
     document.getElementById('app').innerHTML = `<div class="app-container">
-        ${bannerHTML}
         <div class="user-header"><div class="user-header-top"><div class="user-avatar" id="btn-profile">${u.avatar?`<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:15px;object-fit:cover;">`:u.username[0].toUpperCase()}</div><div class="user-greeting"><div class="user-name">${escapeHTML(u.username)}</div><div class="user-role-badge">${u.role==='executor'?'Исполнитель':u.role==='customer'?'Заказчик':'Исполнитель и заказчик'}</div></div><div class="user-rating-mini">★ ${rating}</div></div></div>
         <div class="actions-grid">
             <div class="action-card" id="btn-create"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="action-card-title">Создать задание</div></div>
@@ -310,8 +317,11 @@ async function renderHome() {
 
 async function renderBirzha() {
     STATE.currentScreen = 'birzha'; stopBannerCarousel();
-    await loadTasks();
+    await loadBanners(); await loadTasks();
     const tasks = STATE.tasks;
+    
+    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${BUCKET_URL}${STATE.banners[0].image}" alt="">`:''}<div class="sticky-banner-body"><div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div><div class="sticky-banner-price-row"><div class="sticky-banner-price">${formatPrice(STATE.banners[0]?.price||0)} ₽</div><button class="sticky-banner-btn" id="btn-banner-go">ПЕРЕЙТИ</button></div></div></div>` : '';
+    
     let th = '';
     for (const t of tasks) {
         const c = await getUserById(t.customer_id);
@@ -326,11 +336,23 @@ async function renderBirzha() {
         </div>`;
     }
     document.getElementById('app').innerHTML = `<div class="app-container">
+        ${bannerHTML}
         <div class="section-header"><div class="section-title">Все задания</div><div class="task-count">${tasks.length} заданий</div></div>
         <div>${th || '<div class="empty-state">Нет заданий</div>'}</div>
         ${renderNav('birzha')}
     </div>`;
     bindNav('birzha');
+    
+    // Кнопка ПЕРЕЙТИ в баннере
+    document.getElementById('btn-banner-go')?.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var link = STATE.banners[STATE.currentBanner]?.telegram_link || 'https://t.me/FBK_MiniBusiness';
+        window.open(link, '_blank');
+    });
+    
+    // Карусель баннеров
+    if (STATE.banners.length > 1) startBannerCarousel();
+    
     document.querySelectorAll('.task-card').forEach(c => c.addEventListener('click', () => showTaskDetail(c.dataset.id)));
 }
 
