@@ -83,7 +83,22 @@ function updateBannerDisplay() {
     if (!el || !STATE.banners.length) return;
     const b = STATE.banners[STATE.currentBanner];
     const imgEl = el.querySelector('.sticky-banner-image');
-    if (imgEl) imgEl.src = b.image ? BUCKET_URL + b.image : '';
+    if (imgEl) {
+    if (b.image) {
+        imgEl.src = BUCKET_URL + b.image;
+        imgEl.style.display = 'block';
+        el.querySelector('.sticky-banner-body').style.position = 'relative';
+        el.querySelector('.sticky-banner-body').style.zIndex = '1';
+        if (el.querySelector('.sticky-banner-title')) el.querySelector('.sticky-banner-title').style.color = 'white';
+        if (el.querySelector('.sticky-banner-desc')) el.querySelector('.sticky-banner-desc').style.color = 'rgba(255,255,255,0.85)';
+        if (el.querySelector('.sticky-banner-price')) el.querySelector('.sticky-banner-price').style.color = 'white';
+    } else {
+        imgEl.style.display = 'none';
+        if (el.querySelector('.sticky-banner-title')) el.querySelector('.sticky-banner-title').style.color = '';
+        if (el.querySelector('.sticky-banner-desc')) el.querySelector('.sticky-banner-desc').style.color = '';
+        if (el.querySelector('.sticky-banner-price')) el.querySelector('.sticky-banner-price').style.color = '';
+    }
+}
     const titleEl = el.querySelector('.sticky-banner-title');
     if (titleEl) titleEl.textContent = b.title;
     const descEl = el.querySelector('.sticky-banner-desc');
@@ -320,7 +335,7 @@ async function renderBirzha() {
     await loadBanners(); await loadTasks();
     const tasks = STATE.tasks;
     
-    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${BUCKET_URL}${STATE.banners[0].image}" alt="">`:''}<div class="sticky-banner-body"><div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div><div class="sticky-banner-price-row"><div class="sticky-banner-price">${formatPrice(STATE.banners[0]?.price||0)} ₽</div><button class="sticky-banner-btn" id="btn-banner-go">ПЕРЕЙТИ</button></div></div></div>` : '';
+    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner" style="position:relative;overflow:hidden;">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${BUCKET_URL}${STATE.banners[0].image}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.4);z-index:0;">`:''}<div class="sticky-banner-body" style="position:relative;z-index:1;">${STATE.banners[0]?.image?`<div class="sticky-banner-title" style="color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc" style="color:rgba(255,255,255,0.85);">${escapeHTML(STATE.banners[0]?.description||'')}</div>`:`<div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div>`}<div class="sticky-banner-price-row"><div class="sticky-banner-price" style="${STATE.banners[0]?.image?'color:white;':''}">${formatPrice(STATE.banners[0]?.price||0)} ₽</div><button class="sticky-banner-btn" id="btn-banner-go">ПЕРЕЙТИ</button></div></div></div>` : '';
     
     let th = '';
     for (const t of tasks) {
