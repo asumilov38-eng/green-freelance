@@ -1,4 +1,7 @@
 "use strict";
+const SUPABASE_URL = 'https://ymcfgtxfuxhydzjeibll.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_7nC0W-548Id_SCMs2dyKDA_SqAShFiJ';
+const CREATOR_PHONE = '+79049584282';
 // ==========================================
 // GREENFREELANCE v5 — ПОЛНЫЙ ФУНКЦИОНАЛ
 // ==========================================
@@ -6,7 +9,7 @@
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor('#16A34A'); tg.setBackgroundColor('#F0FDF4'); }
 
-var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 const BANNER_INTERVAL = 30;
 const BUCKET_URL = SUPABASE_URL + '/storage/v1/object/public/images/';
 const CREATOR_ID = 'GF-000-777';
