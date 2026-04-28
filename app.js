@@ -1,3 +1,4 @@
+"use strict";
 // ==========================================
 // GREENFREELANCE v2 — SUPABASE REALTIME
 // ==========================================
@@ -12,7 +13,7 @@ if (tg) {
 }
 
 // Supabase клиент
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Состояние приложения
 const STATE = {
