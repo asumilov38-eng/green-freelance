@@ -4,7 +4,7 @@ const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor('#16A34A'); tg.setBackgroundColor('#F0FDF4'); }
 
 var supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
-const BANNER_INTERVAL = 15;
+const BANNER_INTERVAL = 10;
 const BUCKET_URL = window.SUPABASE_URL + '/storage/v1/object/public/images/';
 
 const STATE = {
@@ -208,7 +208,7 @@ function showCreateModal() {
 
 function showBannerModal() {
     showModal('Добавить баннер', `
-        <div class="input-group"><label class="input-label">Изображение</label><div class="image-upload-area" id="b-img" style="height:120px;"><div class="image-upload-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="#bbb" width="28"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div style="margin-top:4px;">Загрузить</div></div></div><input type="file" id="b-img-input" accept="image/*" style="display:none;"></div>
+        <div class="input-group"><label class="input-label">Изображение (необязательно)</label><div class="image-upload-area" id="b-img" style="height:120px;"><div class="image-upload-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="#bbb" width="28"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><div style="margin-top:4px;">Загрузить</div></div></div><input type="file" id="b-img-input" accept="image/*" style="display:none;"></div>
         <div class="input-group"><label class="input-label">Название</label><input class="input-field" id="mb-title"></div>
         <div class="input-group"><label class="input-label">Описание</label><textarea class="input-field" id="mb-desc" rows="2"></textarea></div>
         <div class="input-group"><label class="input-label">Цена (от 5₽)</label><input class="input-field" id="mb-price" type="number" min="5" placeholder="50"></div>
@@ -219,15 +219,33 @@ function showBannerModal() {
     document.getElementById('b-img')?.addEventListener('click', () => document.getElementById('b-img-input').click());
     document.getElementById('b-img-input')?.addEventListener('change', e => { bf = e.target.files[0]; if (bf) { const r = new FileReader(); r.onload = ev => document.getElementById('b-img').innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`; r.readAsDataURL(bf); } });
     document.getElementById('btn-save').addEventListener('click', async () => {
-        const t = document.getElementById('mb-title').value.trim();
-        const d = document.getElementById('mb-desc').value.trim();
-        const p = parseInt(document.getElementById('mb-price').value) || 50;
-        const l = document.getElementById('mb-link').value.trim() || 'https://t.me/FBK_MiniBusiness';
-        if (!t) { alert('Введите название!'); return; }
+        const title = document.getElementById('mb-title').value.trim();
+        const desc = document.getElementById('mb-desc').value.trim();
+        const price = parseInt(document.getElementById('mb-price').value) || 50;
+        const link = document.getElementById('mb-link').value.trim() || 'https://t.me/FBK_MiniBusiness';
+        if (!title) { alert('Введите название!'); return; }
+        
         let img = '';
-        if (bf) img = await uploadImage(bf, 'banners/' + Date.now());
-        await supabase.from('banner').insert({ title: t, description: d, price: p, telegram_link: l, image: img, position: STATE.banners.length, expires_at: new Date(Date.now() + 86400000).toISOString() });
-        closeModal(); loadBanners().then(() => renderHome());
+        if (bf) {
+            img = await uploadImage(bf, 'banners/' + Date.now());
+            if (!img) { alert('Ошибка загрузки изображения!'); return; }
+        }
+        
+        const { error } = await supabase.from('banner').insert({ 
+            title: title, 
+            description: desc, 
+            price: price, 
+            telegram_link: link, 
+            image: img, 
+            position: STATE.banners.length, 
+            expires_at: new Date(Date.now() + 86400000).toISOString() 
+        });
+        
+        if (error) { alert('Ошибка сохранения: ' + error.message); return; }
+        
+        await loadBanners();
+        closeModal();
+        renderHome();
     });
 }
 
