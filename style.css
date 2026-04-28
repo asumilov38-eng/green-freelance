@@ -59,11 +59,10 @@ body {
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Фиксированный баннер */
 .sticky-banner {
-    position: sticky;
-    top: 8px;
-    z-index: 50;
+    position: relative; 
+    top: auto;
+    z-index: 1;
     margin-bottom: 16px;
     border-radius: var(--radius-lg);
     overflow: hidden;
@@ -71,7 +70,7 @@ body {
     cursor: pointer;
     transition: var(--transition-bounce);
     background: #1a1a1a;
-    animation: fadeInUp 0.5s ease;
+    animation: bannerAppear 0.5s ease;
 }
 
 .sticky-banner:active {
@@ -803,4 +802,69 @@ body {
     font-size: 10px;
     font-weight: 500;
     margin-top: 2px;
+}
+/* ==========================================
+   SPLASH SCREEN (ЭКРАН ЗАГРУЗКИ)
+   ========================================== */
+.splash-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: linear-gradient(160deg, #F0FDF4 0%, #ffffff 30%, #DCFCE7 100%);
+    gap: 24px;
+}
+
+.splash-logo {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #22C55E, #16A34A);
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 40px rgba(34, 197, 94, 0.3);
+    animation: splashPulse 2s ease-in-out infinite;
+}
+
+.splash-logo svg {
+    width: 40px;
+    height: 40px;
+}
+
+.splash-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #16A34A;
+    letter-spacing: -0.5px;
+}
+
+/* Кубики */
+.splash-loader {
+    display: flex;
+    gap: 8px;
+}
+
+.splash-cube {
+    width: 12px;
+    height: 12px;
+    background: #22C55E;
+    border-radius: 3px;
+    animation: cubeJump 1.2s ease-in-out infinite;
+}
+
+.splash-cube:nth-child(1) { animation-delay: 0s; }
+.splash-cube:nth-child(2) { animation-delay: 0.15s; background: #4ADE80; }
+.splash-cube:nth-child(3) { animation-delay: 0.3s; background: #16A34A; }
+.splash-cube:nth-child(4) { animation-delay: 0.45s; background: #15803D; }
+
+@keyframes splashPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes cubeJump {
+    0%, 40%, 100% { transform: translateY(0); opacity: 1; }
+    20% { transform: translateY(-20px); opacity: 0.6; }
 }
