@@ -88,7 +88,7 @@ function updateBannerDisplay() {
     const imgEl = el.querySelector('.sticky-banner-image');
     if (imgEl) {
         if (b.image) {
-            imgEl.src = BUCKET_URL + b.image;
+            imgEl.src = (b.image && b.image.startsWith('banners/')) ? BUCKET_URL + b.image : b.image;
             imgEl.style.display = 'block';
         } else {
             imgEl.style.display = 'none';
@@ -298,7 +298,7 @@ async function renderBirzha() {
     const pageTasks = tasks.slice(0, start + STATE.tasksPerPage);
     const hasMore = tasks.length > pageTasks.length;
 
-    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${BUCKET_URL}${STATE.banners[0].image}" alt="">`:''}<div class="sticky-banner-body"><div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div><div class="sticky-banner-price-row"><div class="sticky-banner-price">${formatPrice(STATE.banners[0]?.price||0)} ₽</div><button class="sticky-banner-btn" id="btn-banner-go">ПЕРЕЙТИ</button></div></div></div>` : '';
+    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${STATE.banners[0].image.startsWith('banners/') ? BUCKET_URL + STATE.banners[0].image : STATE.banners[0].image}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;" alt="">`:''}<div class="sticky-banner-body"><div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div><div class="sticky-banner-price-row"><div class="sticky-banner-price">${formatPrice(STATE.banners[0]?.price||0)} ₽</div><button class="sticky-banner-btn" id="btn-banner-go">ПЕРЕЙТИ</button></div></div></div>` : '';
 
     let th = '';
     for (const t of pageTasks) {
