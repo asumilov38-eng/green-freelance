@@ -12,8 +12,10 @@ if (tg) {
     tg.MainButton.hide();
 }
 
-// Supabase клиент
-var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+if (typeof window.supabase === 'undefined') {
+    alert('Ошибка: Supabase не загрузился. Включите VPN.');
+}
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Состояние приложения
 const STATE = {
