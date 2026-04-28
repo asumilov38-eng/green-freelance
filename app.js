@@ -1,3 +1,4 @@
+"use strict";
 // ==========================================
 // GREENFREELANCE v5 — ПОЛНЫЙ ФУНКЦИОНАЛ
 // ==========================================
@@ -5,7 +6,7 @@
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor('#16A34A'); tg.setBackgroundColor('#F0FDF4'); }
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const BANNER_INTERVAL = 30;
 const BUCKET_URL = SUPABASE_URL + '/storage/v1/object/public/images/';
 const CREATOR_ID = 'GF-000-777';
