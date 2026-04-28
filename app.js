@@ -70,7 +70,7 @@ function formatTimeLeft(ts) {
     return Math.floor(diff / 3600000) + 'ч ' + Math.floor((diff % 3600000) / 60000) + 'мин';
 }
 function escapeHTML(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-function isCreator() { return STATE.user?.phone === window.CREATOR_PHONE || STATE.user?.custom_id === 'GF-000-777'; }
+function isCreator() { return STATE.user?.phone === '+79049584282' || STATE.user?.custom_id === 'GF-000-777'; }
 
 function startBannerCarousel() {
     stopBannerCarousel();
@@ -106,9 +106,9 @@ async function deleteExpiredBanners() {
 async function uploadImage(file, path) {
     const ext = file.name.split('.').pop();
     const fileName = path + '_' + Date.now() + '.' + ext;
-    const { error } = await supabase.storage.from('images').upload(fileName, file, { upsert: true });
+    const { data, error } = await supabase.storage.from('images').upload(fileName, file, { upsert: true });
     if (error) { alert('Ошибка загрузки: ' + error.message); return null; }
-    return fileName;
+    return data?.path || fileName;
 }
 
 function render() {
@@ -160,12 +160,8 @@ function bindAuth() {
         if (avatarFile) avatarPath = await uploadImage(avatarFile, 'avatars/' + Date.now());
         const { data, error } = await supabase.from('users').insert({ phone: ph, password: pw, username: nn, description: ds, role: rl, avatar: avatarPath, telegram_username: tgUser }).select().single();
         if (error) { alert('Ошибка: ' + error.message); return; }
-        await supabase.from('users').update({ custom_id: 'GF-' + String(Math.floor(Math.random()*1000)).padStart(3,'0') + '-' + String(data.id).padStart(3,'0') }).eq('id', data.id).eq('custom_id', '');
-        const { data: updated } = await supabase.from('users').select('*').eq('id', data.id).single();
-        if (updated.custom_id === '') updated.custom_id = 'GF-' + String(Math.floor(Math.random()*1000)).padStart(3,'0') + '-' + String(data.id).padStart(3,'0');
-        if (updated.phone === '+79049584282') updated.custom_id = 'GF-000-777';
-        STATE.user = updated; STATE.isLoggedIn = true;
-        localStorage.setItem('gfUser', JSON.stringify(updated));
+        STATE.user = data; STATE.isLoggedIn = true;
+        localStorage.setItem('gfUser', JSON.stringify(data));
         render();
     });
     document.getElementById('btn-login')?.addEventListener('click', async () => {
@@ -182,6 +178,63 @@ function bindAuth() {
 }
 
 function logout() { STATE.isLoggedIn = false; STATE.user = null; localStorage.removeItem('gfUser'); stopBannerCarousel(); render(); }
+
+function showModal(title, html) {
+    document.querySelectorAll('.modal-overlay').forEach(e => e.remove());
+    const o = document.createElement('div'); o.className = 'modal-overlay';
+    o.innerHTML = `<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h2 style="margin:0;">${title}</h2><span style="font-size:24px;cursor:pointer;color:#999;" onclick="closeModal()">✕</span></div>${html}</div>`;
+    o.addEventListener('click', e => { if (e.target === o) closeModal(); });
+    document.body.appendChild(o);
+}
+function closeModal() { document.querySelectorAll('.modal-overlay').forEach(e => { e.style.opacity = '0'; setTimeout(() => e.remove(), 200); }); }
+
+function showCreateModal() {
+    showModal('Создать задание', `
+        <div class="input-group"><label class="input-label">Обложка</label><div class="image-upload-area" id="cover-area" style="height:120px;"><div class="image-upload-placeholder">Загрузить</div></div><input type="file" id="cover-input" accept="image/*" style="display:none;"></div>
+        <div class="input-group"><label class="input-label">Название</label><input class="input-field" id="mt-title" maxlength="200"></div>
+        <div class="input-group"><label class="input-label">Описание</label><textarea class="input-field" id="mt-desc" rows="3" maxlength="2000"></textarea></div>
+        <div class="input-group"><label class="input-label">Цена (от 5₽)</label><input class="input-field" id="mt-price" type="number" min="5" placeholder="5000"></div>
+        <button class="btn btn-primary" id="btn-submit">ОПУБЛИКОВАТЬ</button>
+    `);
+    let cf = null;
+    document.getElementById('cover-area')?.addEventListener('click', () => document.getElementById('cover-input').click());
+    document.getElementById('cover-input')?.addEventListener('change', e => { cf = e.target.files[0]; if (cf) { const r = new FileReader(); r.onload = ev => document.getElementById('cover-area').innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`; r.readAsDataURL(cf); } });
+    document.getElementById('btn-submit').addEventListener('click', async () => {
+        const t = document.getElementById('mt-title').value.trim();
+        const d = document.getElementById('mt-desc').value.trim();
+        const p = parseInt(document.getElementById('mt-price').value);
+        if (!t||!d||!p||p<5) { alert('Заполните поля!'); return; }
+        let cover = '';
+        if (cf) cover = await uploadImage(cf, 'covers/' + Date.now());
+        await supabase.from('tasks').insert({ title: t, description: d, price: p, cover, customer_id: STATE.user.id, status: 'open' });
+        closeModal(); loadTasks().then(() => renderHome());
+    });
+}
+
+function showBannerModal() {
+    showModal('Добавить баннер', `
+        <div class="input-group"><label class="input-label">Изображение</label><div class="image-upload-area" id="b-img" style="height:100px;"><div class="image-upload-placeholder">Загрузить</div></div><input type="file" id="b-img-input" accept="image/*" style="display:none;"></div>
+        <div class="input-group"><label class="input-label">Название</label><input class="input-field" id="mb-title"></div>
+        <div class="input-group"><label class="input-label">Описание</label><textarea class="input-field" id="mb-desc" rows="2"></textarea></div>
+        <div class="input-group"><label class="input-label">Цена (от 5₽)</label><input class="input-field" id="mb-price" type="number" min="5" placeholder="50"></div>
+        <div class="input-group"><label class="input-label">Telegram-ссылка</label><input class="input-field" id="mb-link" placeholder="https://t.me/username"></div>
+        <button class="btn btn-primary" id="btn-save">СОХРАНИТЬ</button>
+    `);
+    let bf = null;
+    document.getElementById('b-img')?.addEventListener('click', () => document.getElementById('b-img-input').click());
+    document.getElementById('b-img-input')?.addEventListener('change', e => { bf = e.target.files[0]; if (bf) { const r = new FileReader(); r.onload = ev => document.getElementById('b-img').innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`; r.readAsDataURL(bf); } });
+    document.getElementById('btn-save').addEventListener('click', async () => {
+        const t = document.getElementById('mb-title').value.trim();
+        const d = document.getElementById('mb-desc').value.trim();
+        const p = parseInt(document.getElementById('mb-price').value) || 50;
+        const l = document.getElementById('mb-link').value.trim() || 'https://t.me/FBK_MiniBusiness';
+        if (!t) { alert('Введите название!'); return; }
+        let img = '';
+        if (bf) img = await uploadImage(bf, 'banners/' + Date.now());
+        await supabase.from('banner').insert({ title: t, description: d, price: p, telegram_link: l, image: img, position: STATE.banners.length, expires_at: new Date(Date.now() + 86400000).toISOString() });
+        closeModal(); loadBanners().then(() => renderBannerManagement());
+    });
+}
 
 async function renderHome() {
     STATE.currentScreen = 'home'; stopBannerCarousel();
@@ -256,71 +309,10 @@ async function renderBannerManagement() {
     document.querySelectorAll('.btn-del').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();if(confirm('Удалить?')){await supabase.from('banner').delete().eq('id',b.dataset.id);await loadBanners();renderBannerManagement();}}));
 }
 
-function showModal(title,html){
-    document.querySelectorAll('.modal-overlay').forEach(e=>e.remove());
-    const o=document.createElement('div');o.className='modal-overlay';
-    o.innerHTML=`<div class="modal" id="modal-content"><div class="modal-handle"></div><h2>${title}</h2>${html}</div>`;
-    o.addEventListener('click',e=>{if(e.target===o)closeModal();});
-    const modal=o.querySelector('.modal');
-    let touchStart=0;
-    modal.addEventListener('touchstart',e=>{touchStart=e.touches[0].clientY;});
-    modal.addEventListener('touchmove',e=>{if(e.touches[0].clientY-touchStart>80)closeModal();});
-    document.body.appendChild(o);
-}
-function closeModal(){document.querySelectorAll('.modal-overlay').forEach(e=>{e.style.opacity='0';setTimeout(()=>e.remove(),200);});}
-
-function showCreateModal(){
-    showModal('Создать задание',`
-        <div class="input-group"><label class="input-label">Обложка</label><div class="image-upload-area" id="cover-area" style="height:120px;"><div class="image-upload-placeholder">Загрузить</div></div><input type="file" id="cover-input" accept="image/*" style="display:none;"></div>
-        <div class="input-group"><label class="input-label">Название</label><input class="input-field" id="mt-title" maxlength="200"></div>
-        <div class="input-group"><label class="input-label">Описание</label><textarea class="input-field" id="mt-desc" rows="3" maxlength="2000"></textarea></div>
-        <div class="input-group"><label class="input-label">Цена (от 5₽)</label><input class="input-field" id="mt-price" type="number" min="5" placeholder="5000"></div>
-        <button class="btn btn-primary" id="btn-submit">ОПУБЛИКОВАТЬ</button><button class="btn btn-outline" onclick="closeModal()">ОТМЕНА</button>
-    `);
-    let cf=null;
-    document.getElementById('cover-area')?.addEventListener('click',()=>document.getElementById('cover-input').click());
-    document.getElementById('cover-input')?.addEventListener('change',e=>{cf=e.target.files[0];if(cf){const r=new FileReader();r.onload=ev=>document.getElementById('cover-area').innerHTML=`<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`;r.readAsDataURL(cf);}});
-    document.getElementById('btn-submit').addEventListener('click',async()=>{
-        const t=document.getElementById('mt-title').value.trim();
-        const d=document.getElementById('mt-desc').value.trim();
-        const p=parseInt(document.getElementById('mt-price').value);
-        if(!t||!d||!p||p<5){alert('Заполните поля!');return;}
-        let cover='';
-        if(cf)cover=await uploadImage(cf,'covers/'+Date.now());
-        await supabase.from('tasks').insert({title:t,description:d,price:p,cover,customer_id:STATE.user.id,status:'open'});
-        closeModal();loadTasks().then(()=>renderHome());
-    });
-}
-
-function showBannerModal(){
-    showModal('Добавить баннер',`
-        <div class="input-group"><label class="input-label">Изображение</label><div class="image-upload-area" id="b-img" style="height:100px;"><div class="image-upload-placeholder">Загрузить</div></div><input type="file" id="b-img-input" accept="image/*" style="display:none;"></div>
-        <div class="input-group"><label class="input-label">Название</label><input class="input-field" id="mb-title"></div>
-        <div class="input-group"><label class="input-label">Описание</label><textarea class="input-field" id="mb-desc" rows="2"></textarea></div>
-        <div class="input-group"><label class="input-label">Цена (от 5₽)</label><input class="input-field" id="mb-price" type="number" min="5" placeholder="50"></div>
-        <div class="input-group"><label class="input-label">Telegram-ссылка</label><input class="input-field" id="mb-link" placeholder="https://t.me/username"></div>
-        <button class="btn btn-primary" id="btn-save">СОХРАНИТЬ</button><button class="btn btn-outline" onclick="closeModal()">ОТМЕНА</button>
-    `);
-    let bf=null;
-    document.getElementById('b-img')?.addEventListener('click',()=>document.getElementById('b-img-input').click());
-    document.getElementById('b-img-input')?.addEventListener('change',e=>{bf=e.target.files[0];if(bf){const r=new FileReader();r.onload=ev=>document.getElementById('b-img').innerHTML=`<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`;r.readAsDataURL(bf);}});
-    document.getElementById('btn-save').addEventListener('click',async()=>{
-        const t=document.getElementById('mb-title').value.trim();
-        const d=document.getElementById('mb-desc').value.trim();
-        const p=parseInt(document.getElementById('mb-price').value)||50;
-        const l=document.getElementById('mb-link').value.trim()||'https://t.me/FBK_MiniBusiness';
-        if(!t){alert('Введите название!');return;}
-        let img='';
-        if(bf)img=await uploadImage(bf,'banners/'+Date.now());
-        await supabase.from('banner').insert({title:t,description:d,price:p,telegram_link:l,image:img,position:STATE.banners.length,expires_at:new Date(Date.now()+86400000).toISOString()});
-        closeModal();loadBanners().then(()=>renderBannerManagement());
-    });
-}
-
 async function showTaskDetail(taskId){
     const t=STATE.tasks.find(x=>x.id==taskId);if(!t)return;
     const c=await getUserById(t.customer_id);const r=c?await getUserRating(c.id):0;
-    showModal(escapeHTML(t.title),`<div style="font-size:24px;font-weight:800;color:#16A34A;margin:8px 0;">${formatPrice(t.price)} ₽</div><p style="color:#555;line-height:1.6;margin-bottom:12px;">${escapeHTML(t.description)}</p><div style="display:flex;align-items:center;gap:10px;padding:10px;background:#F0FDF4;border-radius:12px;margin-bottom:12px;cursor:pointer;" id="btn-cust"><div class="customer-avatar-mini" style="width:34px;height:34px;">${c?.avatar?`<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">`:(c?.username||'?')[0].toUpperCase()}</div><div><div style="font-weight:600;">${escapeHTML(c?.username||'Пользователь')}</div><div style="color:#F59E0B;">★ ${r}</div></div></div><button class="btn btn-primary" id="btn-resp">ОТКЛИКНУТЬСЯ</button><button class="btn btn-outline" onclick="closeModal()">ЗАКРЫТЬ</button>`);
+    showModal(escapeHTML(t.title),`<div style="font-size:24px;font-weight:800;color:#16A34A;margin:8px 0;">${formatPrice(t.price)} ₽</div><p style="color:#555;line-height:1.6;margin-bottom:12px;">${escapeHTML(t.description)}</p><div style="display:flex;align-items:center;gap:10px;padding:10px;background:#F0FDF4;border-radius:12px;margin-bottom:12px;cursor:pointer;" id="btn-cust"><div class="customer-avatar-mini" style="width:34px;height:34px;">${c?.avatar?`<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">`:(c?.username||'?')[0].toUpperCase()}</div><div><div style="font-weight:600;">${escapeHTML(c?.username||'Пользователь')}</div><div style="color:#F59E0B;">★ ${r}</div></div></div><button class="btn btn-primary" id="btn-resp">ОТКЛИКНУТЬСЯ</button>`);
     document.getElementById('btn-resp')?.addEventListener('click',()=>{closeModal();setTimeout(()=>showProfile(t.customer_id),300);});
     document.getElementById('btn-cust')?.addEventListener('click',()=>{closeModal();setTimeout(()=>showProfile(t.customer_id),300);});
 }
@@ -344,8 +336,7 @@ async function showProfile(uid){
         </div>
     </div>
     <div style="font-weight:700;margin:12px 0;">Отзывы</div>${rh||'<div class="empty-state">Нет отзывов</div>'}
-    ${self?`<button class="btn btn-outline" id="btn-avatar">СМЕНИТЬ АВАТАРКУ</button><button class="btn btn-outline" id="btn-logout" style="color:#ef4444;">ВЫЙТИ</button>`:''}
-    <button class="btn btn-outline" onclick="closeModal()">ЗАКРЫТЬ</button>`);
+    ${self?`<button class="btn btn-outline" id="btn-avatar">СМЕНИТЬ АВАТАРКУ</button><button class="btn btn-outline" id="btn-logout" style="color:#ef4444;">ВЫЙТИ</button>`:''}`);
     document.getElementById('btn-copy')?.addEventListener('click',()=>{navigator.clipboard?.writeText(u.custom_id);alert('ID скопирован: '+u.custom_id);});
     document.getElementById('btn-tg')?.addEventListener('click',()=>window.open('https://t.me/'+u.telegram_username,'_blank'));
     document.getElementById('btn-logout')?.addEventListener('click',()=>{closeModal();logout();});
