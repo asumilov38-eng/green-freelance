@@ -158,7 +158,22 @@ async function uploadImage(file, path) {
 }
 
 function render() {
-    document.getElementById('app').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#16A34A;font-weight:600;">Загрузка...</div>';
+    document.getElementById('app').innerHTML = `
+    <div class="splash-screen">
+        <div class="splash-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+                <circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            </svg>
+        </div>
+        <div class="splash-title">GreenFreelance</div>
+        <div class="splash-loader">
+            <div class="splash-cube"></div>
+            <div class="splash-cube"></div>
+            <div class="splash-cube"></div>
+            <div class="splash-cube"></div>
+        </div>
+    </div>`;
+    
     STATE.isLoggedIn ? loadAllData().then(() => { deleteExpiredBanners(); renderHome(); }) : renderAuth();
 }
 
