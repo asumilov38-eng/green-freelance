@@ -85,21 +85,27 @@ function updateBannerDisplay() {
     const el = document.getElementById('sticky-banner');
     if (!el || !STATE.banners.length) return;
     const b = STATE.banners[STATE.currentBanner];
-    const imgEl = el.querySelector('.sticky-banner-image');
+    if (!b) return;
+    
+    const imgEl = el.querySelector('img');
     if (imgEl) {
         if (b.image) {
-            imgEl.src = (b.image && b.image.startsWith('banners/')) ? BUCKET_URL + b.image : b.image;
+            imgEl.src = BUCKET_URL + b.image;
             imgEl.style.display = 'block';
         } else {
             imgEl.style.display = 'none';
         }
     }
+    
     const titleEl = el.querySelector('.sticky-banner-title');
-    if (titleEl) titleEl.textContent = b.title;
+    if (titleEl) titleEl.textContent = b.title || '';
+    
     const descEl = el.querySelector('.sticky-banner-desc');
-    if (descEl) descEl.textContent = b.description;
+    if (descEl) descEl.textContent = b.description || '';
+    
     const priceEl = el.querySelector('.sticky-banner-price');
-    if (priceEl) priceEl.textContent = formatPrice(b.price) + ' ₽';
+    if (priceEl) priceEl.textContent = formatPrice(b.price || 0) + ' ₽';
+    
     const btnEl = el.querySelector('.sticky-banner-btn');
     if (btnEl) {
         btnEl.onclick = function(e) {
@@ -298,7 +304,17 @@ async function renderBirzha() {
     const pageTasks = tasks.slice(0, start + STATE.tasksPerPage);
     const hasMore = tasks.length > pageTasks.length;
 
-    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${STATE.banners[0].image.startsWith('banners/') ? BUCKET_URL + STATE.banners[0].image : STATE.banners[0].image}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;" alt="">`:''}<div class="sticky-banner-body"><div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div><div class="sticky-banner-price-row"><div class="sticky-banner-price">${formatPrice(STATE.banners[0]?.price||0)} ₽</div><button class="sticky-banner-btn" id="btn-banner-go">ПЕРЕЙТИ</button></div></div></div>` : '';
+   const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner" style="position:relative;overflow:hidden;min-height:140px;border-radius:16px;">
+    ${STATE.banners[0]?.image ? `<img src="${BUCKET_URL}${STATE.banners[0].image}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.15);z-index:0;">` : ''}
+    <div class="sticky-banner-body" style="position:relative;z-index:1;padding:16px;color:white;">
+        <div class="sticky-banner-title" style="font-size:16px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.6);">${escapeHTML(STATE.banners[0]?.title||'')}</div>
+        <div class="sticky-banner-desc" style="font-size:13px;opacity:1;text-shadow:0 1px 2px rgba(0,0,0,0.5);">${escapeHTML(STATE.banners[0]?.description||'')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+            <span class="sticky-banner-price" style="font-size:22px;font-weight:800;">${formatPrice(STATE.banners[0]?.price||0)} ₽</span>
+            <button class="sticky-banner-btn" id="btn-banner-go" style="background:#22C55E;color:white;border:none;padding:8px 16px;border-radius:10px;font-weight:700;">ПЕРЕЙТИ</button>
+        </div>
+    </div>
+</div>` : '';
 
     let th = '';
     for (const t of pageTasks) {
