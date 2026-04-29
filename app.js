@@ -341,7 +341,13 @@ async function renderBirzha() {
             <div style="position:relative;z-index:1;">
                 <div class="task-top-row"><div class="task-title" style="${t.cover ? 'color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);' : ''}">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div>
                 <div class="task-desc" style="${t.cover ? 'color:rgba(255,255,255,0.85);' : ''}">${isExpanded ? escapeHTML(t.description) : escapeHTML(t.description||'').substring(0, 120) + (descLong ? '...' : '')}</div>
-                <div class="task-meta"><div class="task-customer"><div class="customer-avatar-mini">${c?.avatar ? `<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">` : (c?.username || '?')[0].toUpperCase()}</div><span class="customer-name" style="${t.cover ? 'color:rgba(255,255,255,0.9);' : ''}">${escapeHTML(c?.username || 'Пользователь')}</span><span style="color:#F59E0B;font-size:12px;">★ ${cr}</span></div><span class="task-date" style="${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}">${formatDate(t.created_at)}</span></div>
+                <div class="task-meta"><div class="task-customer"><div class="customer-avatar-mini">${c?.avatar ? `<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">` : (c?.username || '?')[0].toUpperCase()}</div><span class="customer-name" style="${t.cover ? 'color:rgba(255,255,255,0.9);' : ''}">${escapeHTML(c?.username || 'Пользователь')}</span><span style="color:#F59E0B;font-size:12px;">★ ${cr}</span></div><span class="task-date" style="display:flex;align-items:center;gap:6px;${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}">
+    <span>${formatDate(t.created_at)}</span>
+    <span style="display:flex;align-items:center;gap:2px;${t.cover ? 'color:rgba(255,255,255,0.7);' : 'color:#999;'}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        ${t.views || 0}
+    </span>
+</span></div>
                 ${descLong ? `<div style="text-align:right;margin-top:4px;cursor:pointer;font-size:18px;color:#16A34A;" class="btn-expand" data-id="${t.id}">${isExpanded ? '▲' : '▼'}</div>` : ''}
             </div>
         </div>`;
@@ -389,7 +395,13 @@ async function renderMyTasks() {
     STATE.currentScreen = 'mytasks'; stopBannerCarousel();
     await loadTasks();
     let th = '';
-    for (const t of STATE.myTasks) { th += `<div class="task-card" style="position:relative;overflow:hidden;${t.cover ? 'min-height:130px;' : ''}">${t.cover ? `<img src="${BUCKET_URL}${t.cover}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.35);z-index:0;">` : ''}<div style="position:relative;z-index:1;"><div class="task-top-row"><div class="task-title" style="${t.cover ? 'color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);' : ''}">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div><div class="task-desc" style="${t.cover ? 'color:rgba(255,255,255,0.85);' : ''}">${escapeHTML(t.description)}</div><div class="task-meta"><span class="task-date" style="${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}">${formatDate(t.created_at)}</span><span style="background:#fef2f2;color:#ef4444;padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;" class="btn-del" data-id="${t.id}">Удалить</span></div></div></div>`; }
+    for (const t of STATE.myTasks) { th += `<div class="task-card" style="position:relative;overflow:hidden;${t.cover ? 'min-height:130px;' : ''}">${t.cover ? `<img src="${BUCKET_URL}${t.cover}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.35);z-index:0;">` : ''}<div style="position:relative;z-index:1;"><div class="task-top-row"><div class="task-title" style="${t.cover ? 'color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);' : ''}">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div><div class="task-desc" style="${t.cover ? 'color:rgba(255,255,255,0.85);' : ''}">${escapeHTML(t.description)}</div><div class="task-meta"><span class="task-date" style="display:flex;align-items:center;gap:6px;${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}">
+    <span>${formatDate(t.created_at)}</span>
+    <span style="display:flex;align-items:center;gap:2px;${t.cover ? 'color:rgba(255,255,255,0.7);' : 'color:#999;'}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        ${t.views || 0}
+    </span>
+</span><span style="background:#fef2f2;color:#ef4444;padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;" class="btn-del" data-id="${t.id}">Удалить</span></div></div></div>`; }
     document.getElementById('app').innerHTML = `<div class="app-container"><div class="user-header"><div class="user-name" style="color:white;font-weight:700;font-size:18px;">Мои задания</div></div><div>${th || '<div class="empty-state">Нет заданий</div>'}</div>${renderNav('mytasks')}</div>`;
     bindNav('mytasks');
     document.querySelectorAll('.btn-del').forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); if (confirm('Удалить?')) { await supabase.from('tasks').delete().eq('id', b.dataset.id); await loadTasks(); renderMyTasks(); } }));
@@ -410,6 +422,9 @@ async function renderBannerManagement() {
 async function showTaskDetail(taskId) {
     const t = STATE.tasks.find(x => x.id == taskId); if (!t) return;
     const c = await getUserById(t.customer_id), r = c ? await getUserRating(c.id) : 0;
+    // Увеличиваем счётчик просмотров
+await supabase.from('tasks').update({ views: (t.views || 0) + 1 }).eq('id', t.id);
+t.views = (t.views || 0) + 1;
     showModal(escapeHTML(t.title), `${t.cover ? `<div style="width:100%;height:180px;border-radius:12px;overflow:hidden;margin-bottom:12px;"><img src="${BUCKET_URL}${t.cover}" style="width:100%;height:100%;object-fit:cover;"></div>` : ''}<div style="font-size:24px;font-weight:800;color:#16A34A;margin:8px 0;">${formatPrice(t.price)} ₽</div><p style="color:#555;line-height:1.6;margin-bottom:12px;">${escapeHTML(t.description)}</p><div style="display:flex;align-items:center;gap:10px;padding:10px;background:#F0FDF4;border-radius:12px;margin-bottom:12px;cursor:pointer;" id="btn-cust"><div class="customer-avatar-mini" style="width:34px;height:34px;">${c?.avatar ? `<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">` : (c?.username || '?')[0].toUpperCase()}</div><div><div style="font-weight:600;">${escapeHTML(c?.username || 'Пользователь')}</div><div style="color:#F59E0B;">★ ${r}</div></div></div><button class="btn btn-primary" id="btn-resp">ОТКЛИКНУТЬСЯ</button>`);
     document.getElementById('btn-resp')?.addEventListener('click', () => { closeModal(); setTimeout(() => showProfile(t.customer_id), 300); });
     document.getElementById('btn-cust')?.addEventListener('click', () => { closeModal(); setTimeout(() => showProfile(t.customer_id), 300); });
