@@ -110,7 +110,7 @@ function updateBannerDisplay() {
     if (btnEl) {
         btnEl.onclick = function(e) {
             e.stopPropagation();
-            window.open(b.telegram_link || 'https://t.me/FBK_MiniBusiness', '_blank');
+            if (tg) { tg.openLink(b.telegram_link || 'https://t.me/FBK_MiniBusiness'); } else { window.open(b.telegram_link || 'https://t.me/FBK_MiniBusiness', '_blank'); }
         };
     }
 }
@@ -180,11 +180,10 @@ function bindAuth() {
         if (avatarFile) avatarPath = await uploadImage(avatarFile, 'avatars/' + Date.now());
         const { data, error } = await supabase.from('users').insert({ phone: ph, password: pw, username: nn, description: ds, role: rl, avatar: avatarPath, telegram_username: tgUser }).select().single();
         if (error) { alert('Ошибка: ' + error.message); return; }
-        // Получаем пользователя с уже сгенерированным custom_id
-const { data: updatedUser } = await supabase.from('users').select('*').eq('id', data.id).single();
-STATE.user = updatedUser || data;
-STATE.isLoggedIn = true;
-localStorage.setItem('gfUser', JSON.stringify(STATE.user));
+        const { data: updatedUser } = await supabase.from('users').select('*').eq('id', data.id).single();
+        STATE.user = updatedUser || data;
+        STATE.isLoggedIn = true;
+        localStorage.setItem('gfUser', JSON.stringify(STATE.user));
         render();
     });
     document.getElementById('btn-login')?.addEventListener('click', async () => {
@@ -199,6 +198,15 @@ localStorage.setItem('gfUser', JSON.stringify(STATE.user));
 }
 
 function logout() { STATE.isLoggedIn = false; STATE.user = null; localStorage.removeItem('gfUser'); stopBannerCarousel(); render(); }
+
+function showModal(title, html) {
+    document.querySelectorAll('.modal-overlay').forEach(e => e.remove());
+    const o = document.createElement('div'); o.className = 'modal-overlay';
+    o.innerHTML = `<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h2 style="margin:0;">${title}</h2><span style="font-size:24px;cursor:pointer;color:#999;line-height:1;" onclick="closeModal()">✕</span></div>${html}</div>`;
+    o.addEventListener('click', e => { if (e.target === o) closeModal(); });
+    document.body.appendChild(o);
+}
+function closeModal() { document.querySelectorAll('.modal-overlay').forEach(e => { e.style.opacity = '0'; setTimeout(() => e.remove(), 200); }); }
 
 function showReviewModal(taskId, userId) {
     const task = userId ? { id: null, title: 'Пользователь', customer_id: userId } : STATE.tasks.find(t => t.id == taskId);
@@ -217,7 +225,6 @@ function showReviewModal(taskId, userId) {
         closeModal();renderHome();
     });
 }
-function closeModal() { document.querySelectorAll('.modal-overlay').forEach(e => { e.style.opacity = '0'; setTimeout(() => e.remove(), 200); }); }
 
 function showCreateModal() {
     showModal('Создать задание', `
@@ -256,7 +263,7 @@ function showBannerModal() {
         if (!title) { alert('Введите название!'); return; }
         let img = ''; if (bf) { img = await uploadImage(bf, 'banners/' + Date.now()); if (!img) { alert('Ошибка загрузки изображения!'); return; } }
         await supabase.from('banner').insert({ title, description: desc, price, telegram_link: link, image: img, position: STATE.banners.length, expires_at: new Date(Date.now() + 86400000).toISOString() });
-        console.log('Загруженное фото:', img); closeModal(); loadBanners().then(() => renderHome());
+        closeModal(); loadBanners().then(() => renderHome());
     });
 }
 
@@ -297,11 +304,11 @@ async function renderHome() {
     document.getElementById('app').innerHTML = `<div class="app-container">
         <div class="user-header"><div class="user-header-top"><div class="user-avatar" id="btn-profile">${u.avatar?`<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:15px;object-fit:cover;">`:u.username[0].toUpperCase()}</div><div class="user-greeting"><div class="user-name">${escapeHTML(u.username)}</div><div class="user-role-badge">${u.role==='executor'?'Исполнитель':u.role==='customer'?'Заказчик':'Исполнитель и заказчик'}</div></div><div class="user-rating-mini">★ ${rating}</div></div></div>
         <div class="actions-grid">
-    <div class="action-card" id="btn-create"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="action-card-title">Создать задание</div></div>
-    <div class="action-card" id="btn-my-profile"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div><div class="action-card-title">Мой профиль</div></div>
-    ${isCreator()?`<div class="action-card" id="btn-banners"><div class="action-card-icon" style="background:#4ADE80;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="action-card-title">Баннеры</div></div>`:''}
-    <div class="action-card" id="btn-support"><div class="action-card-icon" style="background:#3B82F6;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="action-card-title">Тех-поддержка</div></div>
-</div>
+            <div class="action-card" id="btn-create"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="action-card-title">Создать задание</div></div>
+            <div class="action-card" id="btn-my-profile"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div><div class="action-card-title">Мой профиль</div></div>
+            ${isCreator()?`<div class="action-card" id="btn-banners"><div class="action-card-icon" style="background:#4ADE80;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="action-card-title">Баннеры</div></div>`:''}
+            <div class="action-card" id="btn-support"><div class="action-card-icon" style="background:#3B82F6;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="action-card-title">Тех-поддержка</div></div>
+        </div>
         ${renderNav('home')}
     </div>`;
     bindNav('home');
@@ -310,8 +317,8 @@ async function renderHome() {
     document.getElementById('btn-create')?.addEventListener('click', showCreateModal);
     document.getElementById('btn-banners')?.addEventListener('click', renderBannerManagement);
     document.getElementById('btn-support')?.addEventListener('click', () => {
-    window.open('https://t.me/FBK_MiniBusiness', '_blank');
-});
+        if (tg) { tg.openLink('https://t.me/FBK_MiniBusiness'); } else { window.open('https://t.me/FBK_MiniBusiness', '_blank'); }
+    });
 }
 
 async function renderBirzha() {
@@ -322,15 +329,9 @@ async function renderBirzha() {
     const pageTasks = tasks.slice(0, start + STATE.tasksPerPage);
     const hasMore = tasks.length > pageTasks.length;
 
-    console.log('Баннеры из базы:', JSON.stringify(STATE.banners));
-    console.log('Первое фото:', STATE.banners[0]?.image);
-    
+    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner" style="position:sticky;top:0;z-index:10;overflow:hidden;border-radius:16px;margin-bottom:16px;min-height:130px;box-shadow:0 8px 30px rgba(0,0,0,0.3);">${STATE.banners[0]?.image?`<img src="${BUCKET_URL}${STATE.banners[0].image}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.35);z-index:0;">`:''}<div style="position:relative;z-index:1;padding:14px 16px;color:white;">${STATE.banners[0]?.image?`<div class="sticky-banner-title" style="font-size:16px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.6);color:white;">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc" style="font-size:13px;color:rgba(255,255,255,0.85);text-shadow:0 1px 2px rgba(0,0,0,0.5);">${escapeHTML(STATE.banners[0]?.description||'')}</div>`:`<div style="background:#1a1a1a;margin:-14px -16px;padding:14px 16px;"><div class="sticky-banner-title" style="font-size:16px;font-weight:700;">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc" style="font-size:13px;opacity:0.7;">${escapeHTML(STATE.banners[0]?.description||'')}</div></div>`}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><span class="sticky-banner-price" style="font-size:22px;font-weight:800;">${formatPrice(STATE.banners[0]?.price||0)} ₽</span><button class="sticky-banner-btn" id="btn-banner-go" style="background:#22C55E;color:white;border:none;padding:8px 16px;border-radius:10px;font-weight:700;">ПЕРЕЙТИ</button></div></div></div>` : '';
 
- const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner" style="position:sticky;top:0;z-index:10;overflow:hidden;border-radius:16px;margin-bottom:16px;min-height:130px;box-shadow:0 8px 30px rgba(0,0,0,0.3);">${STATE.banners[0]?.image?`<img src="${BUCKET_URL}${STATE.banners[0].image}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.35);z-index:0;">`:''}<div style="position:relative;z-index:1;padding:14px 16px;color:white;">${STATE.banners[0]?.image?`<div class="sticky-banner-title" style="font-size:16px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.6);color:white;">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc" style="font-size:13px;color:rgba(255,255,255,0.85);text-shadow:0 1px 2px rgba(0,0,0,0.5);">${escapeHTML(STATE.banners[0]?.description||'')}</div>`:`<div style="background:#1a1a1a;margin:-14px -16px;padding:14px 16px;"><div class="sticky-banner-title" style="font-size:16px;font-weight:700;">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc" style="font-size:13px;opacity:0.7;">${escapeHTML(STATE.banners[0]?.description||'')}</div></div>`}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><span class="sticky-banner-price" style="font-size:22px;font-weight:800;">${formatPrice(STATE.banners[0]?.price||0)} ₽</span><button class="sticky-banner-btn" id="btn-banner-go" style="background:#22C55E;color:white;border:none;padding:8px 16px;border-radius:10px;font-weight:700;">ПЕРЕЙТИ</button></div></div></div>` : '';
-
-
-
-let th = '';
+    let th = '';
     for (const t of pageTasks) {
         const c = await getUserById(t.customer_id), cr = c ? await getUserRating(c.id) : 0;
         const isExpanded = STATE.expandedTaskId === t.id;
@@ -358,7 +359,7 @@ let th = '';
     </div>`;
     bindNav('birzha');
 
-    document.getElementById('btn-banner-go')?.addEventListener('click', function(e) { e.stopPropagation(); window.open(STATE.banners[STATE.currentBanner]?.telegram_link || 'https://t.me/FBK_MiniBusiness', '_blank'); });
+    document.getElementById('btn-banner-go')?.addEventListener('click', function(e) { e.stopPropagation(); if (tg) { tg.openLink(STATE.banners[STATE.currentBanner]?.telegram_link || 'https://t.me/FBK_MiniBusiness'); } else { window.open(STATE.banners[STATE.currentBanner]?.telegram_link || 'https://t.me/FBK_MiniBusiness', '_blank'); } });
     if (STATE.banners.length > 1) startBannerCarousel();
     document.getElementById('btn-load-more')?.addEventListener('click', () => { STATE.tasksPage++; renderBirzha(); });
     document.querySelectorAll('.task-card').forEach(c => c.addEventListener('click', function(e) {
@@ -422,12 +423,9 @@ async function showProfile(uid) {
     const self = u.id === STATE.user?.id;
     showModal('Профиль', `<div class="profile-card"><div class="profile-avatar-large">${u.avatar ? `<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:20px;object-fit:cover;">` : u.username[0].toUpperCase()}</div><div class="profile-name">${escapeHTML(u.username)}</div><div class="profile-role">${u.role === 'executor' ? 'Исполнитель' : u.role === 'customer' ? 'Заказчик' : 'Исполнитель и заказчик'}</div>${u.description ? `<div class="profile-desc">${escapeHTML(u.description)}</div>` : ''}<div class="profile-rating-display">★ ${rating}</div><div style="margin-top:8px;"><span style="background:#F0FDF4;padding:6px 12px;border-radius:8px;">ID: ${u.custom_id || 'Нет'}</span></div><div style="margin-top:6px;display:flex;gap:6px;justify-content:center;"><span style="background:#4ADE80;color:white;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-copy">Копировать ID</span>${u.telegram_username ? `<span style="background:#E0F2FE;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-tg">@${u.telegram_username}</span>` : ''}</div></div><div style="font-weight:700;margin:12px 0;">Отзывы</div>${rh || '<div class="empty-state">Нет отзывов</div>'}${self ? `<button class="btn btn-outline" id="btn-avatar">СМЕНИТЬ АВАТАРКУ</button><button class="btn btn-outline" id="btn-logout" style="color:#ef4444;">ВЫЙТИ</button>` : `<button class="btn btn-outline" id="btn-review-profile" style="color:#16A34A;">ОСТАВИТЬ ОТЗЫВ</button>`}`);
     document.getElementById('btn-copy')?.addEventListener('click', () => { navigator.clipboard?.writeText(u.custom_id); alert('ID скопирован: ' + u.custom_id); });
-    document.getElementById('btn-tg')?.addEventListener('click', () => window.open('https://t.me/' + u.telegram_username, '_blank'));
+    document.getElementById('btn-tg')?.addEventListener('click', () => { if (tg) { tg.openLink('https://t.me/' + u.telegram_username); } else { window.open('https://t.me/' + u.telegram_username, '_blank'); } });
     document.getElementById('btn-logout')?.addEventListener('click', () => { closeModal(); logout(); });
-    document.getElementById('btn-review-profile')?.addEventListener('click', () => {
-    closeModal();
-    setTimeout(() => showReviewModal(null, u.id), 300);
-});
+    document.getElementById('btn-review-profile')?.addEventListener('click', () => { closeModal(); setTimeout(() => showReviewModal(null, u.id), 300); });
     document.getElementById('btn-avatar')?.addEventListener('click', () => { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; const path = await uploadImage(f, 'avatars/' + Date.now()); if (path) { await supabase.from('users').update({ avatar: path }).eq('id', STATE.user.id); STATE.user.avatar = path; localStorage.setItem('gfUser', JSON.stringify(STATE.user)); closeModal(); showProfile(); } }); inp.click(); });
 }
 
