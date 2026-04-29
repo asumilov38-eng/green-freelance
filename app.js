@@ -287,10 +287,11 @@ async function renderHome() {
     document.getElementById('app').innerHTML = `<div class="app-container">
         <div class="user-header"><div class="user-header-top"><div class="user-avatar" id="btn-profile">${u.avatar?`<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:15px;object-fit:cover;">`:u.username[0].toUpperCase()}</div><div class="user-greeting"><div class="user-name">${escapeHTML(u.username)}</div><div class="user-role-badge">${u.role==='executor'?'Исполнитель':u.role==='customer'?'Заказчик':'Исполнитель и заказчик'}</div></div><div class="user-rating-mini">★ ${rating}</div></div></div>
         <div class="actions-grid">
-            <div class="action-card" id="btn-create"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="action-card-title">Создать задание</div></div>
-            <div class="action-card" id="btn-my-profile"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div><div class="action-card-title">Мой профиль</div></div>
-            ${isCreator()?`<div class="action-card" id="btn-banners"><div class="action-card-icon" style="background:#4ADE80;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="action-card-title">Баннеры</div></div>`:''}
-        </div>
+    <div class="action-card" id="btn-create"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="action-card-title">Создать задание</div></div>
+    <div class="action-card" id="btn-my-profile"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div><div class="action-card-title">Мой профиль</div></div>
+    ${isCreator()?`<div class="action-card" id="btn-banners"><div class="action-card-icon" style="background:#4ADE80;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="action-card-title">Баннеры</div></div>`:''}
+    <div class="action-card" id="btn-support"><div class="action-card-icon" style="background:#3B82F6;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="action-card-title">Тех-поддержка</div></div>
+</div>
         ${renderNav('home')}
     </div>`;
     bindNav('home');
@@ -298,6 +299,9 @@ async function renderHome() {
     document.getElementById('btn-my-profile')?.addEventListener('click', () => showProfile());
     document.getElementById('btn-create')?.addEventListener('click', showCreateModal);
     document.getElementById('btn-banners')?.addEventListener('click', renderBannerManagement);
+    document.getElementById('btn-support')?.addEventListener('click', () => {
+    window.open('https://t.me/FBK_MiniBusiness', '_blank');
+});
 }
 
 async function renderBirzha() {
