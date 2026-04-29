@@ -200,12 +200,22 @@ localStorage.setItem('gfUser', JSON.stringify(STATE.user));
 
 function logout() { STATE.isLoggedIn = false; STATE.user = null; localStorage.removeItem('gfUser'); stopBannerCarousel(); render(); }
 
-function showModal(title, html) {
-    document.querySelectorAll('.modal-overlay').forEach(e => e.remove());
-    const o = document.createElement('div'); o.className = 'modal-overlay';
-    o.innerHTML = `<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h2 style="margin:0;">${title}</h2><span style="font-size:24px;cursor:pointer;color:#999;line-height:1;" onclick="closeModal()">✕</span></div>${html}</div>`;
-    o.addEventListener('click', e => { if (e.target === o) closeModal(); });
-    document.body.appendChild(o);
+function showReviewModal(taskId, userId) {
+    const task = userId ? { id: null, title: 'Пользователь', customer_id: userId } : STATE.tasks.find(t => t.id == taskId);
+    if (!task) return;
+    showModal('Отзыв', `
+        <div class="stars-row" id="stars">${[1,2,3,4,5].map(i => `<button class="star-btn active" data-s="${i}"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></button>`).join('')}</div>
+        <div class="input-group"><label class="input-label">Комментарий</label><textarea class="input-field" id="mr-comment" rows="2"></textarea></div>
+        <button class="btn btn-primary" id="btn-submit-r">ОСТАВИТЬ</button><button class="btn btn-outline" onclick="closeModal()">ОТМЕНА</button>
+    `);
+    let rat=5;
+    document.querySelectorAll('#stars .star-btn').forEach((b,i)=>{b.addEventListener('click',()=>{rat=i+1;document.querySelectorAll('#stars .star-btn').forEach((x,j)=>x.classList.toggle('active',j<rat));});});
+    document.getElementById('btn-submit-r').addEventListener('click',async()=>{
+        const c=document.getElementById('mr-comment').value.trim();
+        const {error}=await supabase.from('reviews').insert({task_id:task.id||null,reviewer_id:STATE.user.id,user_id:task.customer_id,rating:rat,comment:c});
+        if(error){alert('Ошибка или отзыв уже оставлен.');return;}
+        closeModal();renderHome();
+    });
 }
 function closeModal() { document.querySelectorAll('.modal-overlay').forEach(e => { e.style.opacity = '0'; setTimeout(() => e.remove(), 200); }); }
 
@@ -413,10 +423,14 @@ async function showProfile(uid) {
     const { data: reviews } = await supabase.from('reviews').select('*').eq('user_id', u.id).order('created_at', { ascending: false }).limit(20);
     let rh = ''; if (reviews) for (const r of reviews) { const rv = await getUserById(r.reviewer_id); rh += `<div class="review-item"><div class="review-header"><span>${escapeHTML(rv?.username || 'Пользователь')}</span><span style="color:#FBBF24;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span></div>${r.comment ? `<div>${escapeHTML(r.comment)}</div>` : ''}</div>`; }
     const self = u.id === STATE.user?.id;
-    showModal('Профиль', `<div class="profile-card"><div class="profile-avatar-large">${u.avatar ? `<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:20px;object-fit:cover;">` : u.username[0].toUpperCase()}</div><div class="profile-name">${escapeHTML(u.username)}</div><div class="profile-role">${u.role === 'executor' ? 'Исполнитель' : u.role === 'customer' ? 'Заказчик' : 'Исполнитель и заказчик'}</div>${u.description ? `<div class="profile-desc">${escapeHTML(u.description)}</div>` : ''}<div class="profile-rating-display">★ ${rating}</div><div style="margin-top:8px;"><span style="background:#F0FDF4;padding:6px 12px;border-radius:8px;">ID: ${u.custom_id || 'Нет'}</span></div><div style="margin-top:6px;display:flex;gap:6px;justify-content:center;"><span style="background:#4ADE80;color:white;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-copy">Копировать ID</span>${u.telegram_username ? `<span style="background:#E0F2FE;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-tg">@${u.telegram_username}</span>` : ''}</div></div><div style="font-weight:700;margin:12px 0;">Отзывы</div>${rh || '<div class="empty-state">Нет отзывов</div>'}${self ? `<button class="btn btn-outline" id="btn-avatar">СМЕНИТЬ АВАТАРКУ</button><button class="btn btn-outline" id="btn-logout" style="color:#ef4444;">ВЫЙТИ</button>` : ''}`);
+    showModal('Профиль', `<div class="profile-card"><div class="profile-avatar-large">${u.avatar ? `<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:20px;object-fit:cover;">` : u.username[0].toUpperCase()}</div><div class="profile-name">${escapeHTML(u.username)}</div><div class="profile-role">${u.role === 'executor' ? 'Исполнитель' : u.role === 'customer' ? 'Заказчик' : 'Исполнитель и заказчик'}</div>${u.description ? `<div class="profile-desc">${escapeHTML(u.description)}</div>` : ''}<div class="profile-rating-display">★ ${rating}</div><div style="margin-top:8px;"><span style="background:#F0FDF4;padding:6px 12px;border-radius:8px;">ID: ${u.custom_id || 'Нет'}</span></div><div style="margin-top:6px;display:flex;gap:6px;justify-content:center;"><span style="background:#4ADE80;color:white;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-copy">Копировать ID</span>${u.telegram_username ? `<span style="background:#E0F2FE;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-tg">@${u.telegram_username}</span>` : ''}</div></div><div style="font-weight:700;margin:12px 0;">Отзывы</div>${rh || '<div class="empty-state">Нет отзывов</div>'}${self ? `<button class="btn btn-outline" id="btn-avatar">СМЕНИТЬ АВАТАРКУ</button><button class="btn btn-outline" id="btn-logout" style="color:#ef4444;">ВЫЙТИ</button>` : `<button class="btn btn-outline" id="btn-review-profile" style="color:#16A34A;">ОСТАВИТЬ ОТЗЫВ</button>`}`);
     document.getElementById('btn-copy')?.addEventListener('click', () => { navigator.clipboard?.writeText(u.custom_id); alert('ID скопирован: ' + u.custom_id); });
     document.getElementById('btn-tg')?.addEventListener('click', () => window.open('https://t.me/' + u.telegram_username, '_blank'));
     document.getElementById('btn-logout')?.addEventListener('click', () => { closeModal(); logout(); });
+    document.getElementById('btn-review-profile')?.addEventListener('click', () => {
+    closeModal();
+    setTimeout(() => showReviewModal(null, u.id), 300);
+});
     document.getElementById('btn-avatar')?.addEventListener('click', () => { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; const path = await uploadImage(f, 'avatars/' + Date.now()); if (path) { await supabase.from('users').update({ avatar: path }).eq('id', STATE.user.id); STATE.user.avatar = path; localStorage.setItem('gfUser', JSON.stringify(STATE.user)); closeModal(); showProfile(); } }); inp.click(); });
 }
 
