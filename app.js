@@ -180,7 +180,11 @@ function bindAuth() {
         if (avatarFile) avatarPath = await uploadImage(avatarFile, 'avatars/' + Date.now());
         const { data, error } = await supabase.from('users').insert({ phone: ph, password: pw, username: nn, description: ds, role: rl, avatar: avatarPath, telegram_username: tgUser }).select().single();
         if (error) { alert('Ошибка: ' + error.message); return; }
-        STATE.user = data; STATE.isLoggedIn = true; localStorage.setItem('gfUser', JSON.stringify(data));
+        // Получаем пользователя с уже сгенерированным custom_id
+const { data: updatedUser } = await supabase.from('users').select('*').eq('id', data.id).single();
+STATE.user = updatedUser || data;
+STATE.isLoggedIn = true;
+localStorage.setItem('gfUser', JSON.stringify(STATE.user));
         render();
     });
     document.getElementById('btn-login')?.addEventListener('click', async () => {
