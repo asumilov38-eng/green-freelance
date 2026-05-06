@@ -19,7 +19,7 @@ async function loadUser() {
     if (saved) {
         STATE.user = JSON.parse(saved); STATE.isLoggedIn = true;
         const { data } = await supabase.from('users').select('*').eq('id', STATE.user.id).single();
-        if (data) { STATE.user = data; localStorage.setItem('gfUser', JSON.stringify(data)); }
+        if (data) { STATE.user = data; STATE.usersCache[data.id] = data; localStorage.setItem('gfUser', JSON.stringify(data)); }
         else { STATE.isLoggedIn = false; STATE.user = null; localStorage.removeItem('gfUser'); }
     }
 }
@@ -358,7 +358,13 @@ async function showProfile(uid) {
     document.getElementById('btn-logout')?.addEventListener('click', () => { closeModal(); logout(); });
     document.getElementById('btn-review-profile')?.addEventListener('click', () => { closeModal(); setTimeout(() => showReviewModal(null, u.id), 300); });
     document.getElementById('btn-avatar')?.addEventListener('click', () => { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; const path = await uploadImage(f, 'avatars/' + Date.now()); if (path) { await supabase.from('users').update({ avatar: path }).eq('id', STATE.user.id); STATE.user.avatar = path; localStorage.setItem('gfUser', JSON.stringify(STATE.user)); closeModal(); showProfile(); } }); inp.click(); });
-    document.getElementById('btn-verify')?.addEventListener('click', async () => { await supabase.from('users').update({ verified: !u.verified }).eq('id', u.id); u.verified = !u.verified; closeModal(); setTimeout(() => showProfile(uid), 300); });
+    document.getElementById('btn-verify')?.addEventListener('click', async () => {
+    await supabase.from('users').update({ verified: !u.verified }).eq('id', u.id);
+    u.verified = !u.verified;
+    STATE.usersCache[u.id] = u; // Сохраняем в кеш
+    closeModal();
+    setTimeout(() => showProfile(uid), 300);
+});
 }
 
 (async function () { await loadUser(); render(); })();
