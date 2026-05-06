@@ -86,33 +86,13 @@ function updateBannerDisplay() {
     if (!el || !STATE.banners.length) return;
     const b = STATE.banners[STATE.currentBanner];
     if (!b) return;
-    
     const imgEl = el.querySelector('img');
-    if (imgEl) {
-        if (b.image) {
-            imgEl.src = BUCKET_URL + b.image;
-            imgEl.style.display = 'block';
-        } else {
-            imgEl.style.display = 'none';
-        }
-    }
-    
-    const titleEl = el.querySelector('.sticky-banner-title');
-    if (titleEl) titleEl.textContent = b.title || '';
-    
-    const descEl = el.querySelector('.sticky-banner-desc');
-    if (descEl) descEl.textContent = b.description || '';
-    
-    const priceEl = el.querySelector('.sticky-banner-price');
-    if (priceEl) priceEl.textContent = formatPrice(b.price || 0) + ' ₽';
-    
+    if (imgEl) { if (b.image) { imgEl.src = BUCKET_URL + b.image; imgEl.style.display = 'block'; } else { imgEl.style.display = 'none'; } }
+    const titleEl = el.querySelector('.sticky-banner-title'); if (titleEl) titleEl.textContent = b.title || '';
+    const descEl = el.querySelector('.sticky-banner-desc'); if (descEl) descEl.textContent = b.description || '';
+    const priceEl = el.querySelector('.sticky-banner-price'); if (priceEl) priceEl.textContent = formatPrice(b.price || 0) + ' ₽';
     const btnEl = el.querySelector('.sticky-banner-btn');
-    if (btnEl) {
-        btnEl.onclick = function(e) {
-            e.stopPropagation();
-            if (tg) { tg.openLink(b.telegram_link || 'https://t.me/FBK_MiniBusiness'); } else { window.open(b.telegram_link || 'https://t.me/FBK_MiniBusiness', '_blank'); }
-        };
-    }
+    if (btnEl) { btnEl.onclick = function(e) { e.stopPropagation(); if (tg) { tg.openLink(b.telegram_link || 'https://t.me/FBK_MiniBusiness'); } else { window.open(b.telegram_link || 'https://t.me/FBK_MiniBusiness', '_blank'); } }; }
 }
 
 async function deleteExpiredBanners() {
@@ -129,43 +109,12 @@ async function uploadImage(file, path) {
 }
 
 function render() {
-    document.getElementById('app').innerHTML = `
-    <div class="splash-screen">
-        <div class="splash-logo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
-                <circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            </svg>
-        </div>
-        <div class="splash-title">GreenFreelance</div>
-        <div class="splash-loader">
-            <div class="splash-cube"></div><div class="splash-cube"></div><div class="splash-cube"></div><div class="splash-cube"></div>
-        </div>
-    </div>`;
+    document.getElementById('app').innerHTML = `<div class="splash-screen"><div class="splash-logo"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div><div class="splash-title">GreenFreelance</div><div class="splash-loader"><div class="splash-cube"></div><div class="splash-cube"></div><div class="splash-cube"></div><div class="splash-cube"></div></div></div>`;
     STATE.isLoggedIn ? loadAllData().then(() => { deleteExpiredBanners(); renderHome(); }) : renderAuth();
 }
 
 function renderAuth() {
-    document.getElementById('app').innerHTML = `<div class="app-container auth-screen">
-        <div class="auth-header"><div class="auth-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4" stroke="white" fill="none" stroke-width="2"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="white" fill="none" stroke-width="2"/></svg></div><h1 class="auth-title">GreenFreelance</h1><p class="auth-subtitle">Биржа фриланса</p></div>
-        <div class="auth-form-container" id="reg-form">
-            <div class="form-title">Регистрация</div>
-            <div class="input-group"><label class="input-label">Телефон</label><input class="input-field" id="reg-phone" placeholder="+79049584282"></div>
-            <div class="input-group"><label class="input-label">Пароль</label><input class="input-field" type="password" id="reg-pass" placeholder="Минимум 4 символа"></div>
-            <div class="input-group"><label class="input-label">Никнейм</label><input class="input-field" id="reg-nick" placeholder="Ваш ник"></div>
-            <div class="input-group"><label class="input-label">Описание</label><input class="input-field" id="reg-desc" placeholder="О себе"></div>
-            <div class="input-group"><label class="input-label">Аватарка</label><div class="image-upload-area" id="reg-avatar" style="height:100px;"><div class="image-upload-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="#bbb" width="24"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>Загрузить</div></div><input type="file" id="reg-avatar-input" accept="image/*" style="display:none;"></div>
-            <div class="input-group"><label class="input-label">Роль</label><select class="select-field" id="reg-role"><option value="executor">Исполнитель</option><option value="customer">Заказчик</option><option value="both">Исполнитель и заказчик</option></select></div>
-            <button class="btn btn-primary" id="btn-reg">СОЗДАТЬ АККАУНТ</button>
-            <p class="link-text">Уже есть аккаунт? <span id="show-login">Войти</span></p>
-        </div>
-        <div class="auth-form-container" id="login-form" style="display:none;">
-            <div class="form-title">Вход</div>
-            <div class="input-group"><label class="input-label">Телефон</label><input class="input-field" id="login-phone" placeholder="+79049584282"></div>
-            <div class="input-group"><label class="input-label">Пароль</label><input class="input-field" type="password" id="login-pass"></div>
-            <button class="btn btn-primary" id="btn-login">ВОЙТИ</button>
-            <p class="link-text">Нет аккаунта? <span id="show-reg">Регистрация</span></p>
-        </div>
-    </div>`;
+    document.getElementById('app').innerHTML = `<div class="app-container auth-screen"><div class="auth-header"><div class="auth-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4" stroke="white" fill="none" stroke-width="2"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="white" fill="none" stroke-width="2"/></svg></div><h1 class="auth-title">GreenFreelance</h1><p class="auth-subtitle">Биржа фриланса</p></div><div class="auth-form-container" id="reg-form"><div class="form-title">Регистрация</div><div class="input-group"><label class="input-label">Телефон</label><input class="input-field" id="reg-phone" placeholder="+79049584282"></div><div class="input-group"><label class="input-label">Пароль</label><input class="input-field" type="password" id="reg-pass" placeholder="Минимум 4 символа"></div><div class="input-group"><label class="input-label">Никнейм</label><input class="input-field" id="reg-nick" placeholder="Ваш ник"></div><div class="input-group"><label class="input-label">Описание</label><input class="input-field" id="reg-desc" placeholder="О себе"></div><div class="input-group"><label class="input-label">Аватарка</label><div class="image-upload-area" id="reg-avatar" style="height:100px;"><div class="image-upload-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="#bbb" width="24"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>Загрузить</div></div><input type="file" id="reg-avatar-input" accept="image/*" style="display:none;"></div><div class="input-group"><label class="input-label">Роль</label><select class="select-field" id="reg-role"><option value="executor">Исполнитель</option><option value="customer">Заказчик</option><option value="both">Исполнитель и заказчик</option></select></div><button class="btn btn-primary" id="btn-reg">СОЗДАТЬ АККАУНТ</button><p class="link-text">Уже есть аккаунт? <span id="show-login">Войти</span></p></div><div class="auth-form-container" id="login-form" style="display:none;"><div class="form-title">Вход</div><div class="input-group"><label class="input-label">Телефон</label><input class="input-field" id="login-phone" placeholder="+79049584282"></div><div class="input-group"><label class="input-label">Пароль</label><input class="input-field" type="password" id="login-pass"></div><button class="btn btn-primary" id="btn-login">ВОЙТИ</button><p class="link-text">Нет аккаунта? <span id="show-reg">Регистрация</span></p></div></div>`;
     bindAuth();
 }
 
@@ -181,9 +130,7 @@ function bindAuth() {
         const { data, error } = await supabase.from('users').insert({ phone: ph, password: pw, username: nn, description: ds, role: rl, avatar: avatarPath, telegram_username: tgUser }).select().single();
         if (error) { alert('Ошибка: ' + error.message); return; }
         const { data: updatedUser } = await supabase.from('users').select('*').eq('id', data.id).single();
-        STATE.user = updatedUser || data;
-        STATE.isLoggedIn = true;
-        localStorage.setItem('gfUser', JSON.stringify(STATE.user));
+        STATE.user = updatedUser || data; STATE.isLoggedIn = true; localStorage.setItem('gfUser', JSON.stringify(STATE.user));
         render();
     });
     document.getElementById('btn-login')?.addEventListener('click', async () => {
@@ -316,9 +263,7 @@ async function renderHome() {
     document.getElementById('btn-my-profile')?.addEventListener('click', () => showProfile());
     document.getElementById('btn-create')?.addEventListener('click', showCreateModal);
     document.getElementById('btn-banners')?.addEventListener('click', renderBannerManagement);
-    document.getElementById('btn-support')?.addEventListener('click', () => {
-        if (tg) { tg.openLink('https://t.me/FBK_MiniBusiness'); } else { window.open('https://t.me/FBK_MiniBusiness', '_blank'); }
-    });
+    document.getElementById('btn-support')?.addEventListener('click', () => { if (tg) { tg.openLink('https://t.me/FBK_MiniBusiness'); } else { window.open('https://t.me/FBK_MiniBusiness', '_blank'); } });
 }
 
 async function renderBirzha() {
@@ -329,7 +274,7 @@ async function renderBirzha() {
     const pageTasks = tasks.slice(0, start + STATE.tasksPerPage);
     const hasMore = tasks.length > pageTasks.length;
 
-    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner" style="position:sticky;top:0;z-index:10;overflow:hidden;border-radius:16px;margin-bottom:16px;min-height:130px;box-shadow:0 8px 30px rgba(0,0,0,0.3);">${STATE.banners[0]?.image?`<img src="${BUCKET_URL}${STATE.banners[0].image}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.35);z-index:0;">`:''}<div style="position:relative;z-index:1;padding:14px 16px;color:white;">${STATE.banners[0]?.image?`<div class="sticky-banner-title" style="font-size:16px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.6);color:white;">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc" style="font-size:13px;color:rgba(255,255,255,0.85);text-shadow:0 1px 2px rgba(0,0,0,0.5);">${escapeHTML(STATE.banners[0]?.description||'')}</div>`:`<div style="background:#1a1a1a;margin:-14px -16px;padding:14px 16px;"><div class="sticky-banner-title" style="font-size:16px;font-weight:700;">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc" style="font-size:13px;opacity:0.7;">${escapeHTML(STATE.banners[0]?.description||'')}</div></div>`}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><span class="sticky-banner-price" style="font-size:22px;font-weight:800;">${formatPrice(STATE.banners[0]?.price||0)} ₽</span><button class="sticky-banner-btn" id="btn-banner-go" style="background:#22C55E;color:white;border:none;padding:8px 16px;border-radius:10px;font-weight:700;">ПЕРЕЙТИ</button></div></div></div>` : '';
+    const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner"><div style="position:relative;overflow:hidden;border-radius:16px;min-height:130px;">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${BUCKET_URL}${STATE.banners[0].image}" alt="">`:''}<div class="sticky-banner-body">${STATE.banners[0]?.image?`<div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div>`:`<div style="background:#1a1a1a;margin:-14px -16px;padding:14px 16px;"><div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div></div>`}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><span class="sticky-banner-price">${formatPrice(STATE.banners[0]?.price||0)} ₽</span><button class="sticky-banner-btn" id="btn-banner-go">ПЕРЕЙТИ</button></div></div></div></div>` : '';
 
     let th = '';
     for (const t of pageTasks) {
@@ -341,13 +286,7 @@ async function renderBirzha() {
             <div style="position:relative;z-index:1;">
                 <div class="task-top-row"><div class="task-title" style="${t.cover ? 'color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);' : ''}">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div>
                 <div class="task-desc" style="${t.cover ? 'color:rgba(255,255,255,0.85);' : ''}">${isExpanded ? escapeHTML(t.description) : escapeHTML(t.description||'').substring(0, 120) + (descLong ? '...' : '')}</div>
-                <div class="task-meta"><div class="task-customer"><div class="customer-avatar-mini">${c?.avatar ? `<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">` : (c?.username || '?')[0].toUpperCase()}</div><span class="customer-name" style="${t.cover ? 'color:rgba(255,255,255,0.9);' : ''}">${escapeHTML(c?.username || 'Пользователь')}</span><span style="color:#F59E0B;font-size:12px;">★ ${cr}</span></div><span class="task-date" style="display:flex;align-items:center;gap:6px;${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}">
-    <span>${formatDate(t.created_at)}</span>
-    <span style="display:flex;align-items:center;gap:2px;${t.cover ? 'color:rgba(255,255,255,0.7);' : 'color:#999;'}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        ${t.views || 0}
-    </span>
-</span></div>
+                <div class="task-meta"><div class="task-customer"><div class="customer-avatar-mini">${c?.avatar ? `<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">` : (c?.username || '?')[0].toUpperCase()}</div><span class="customer-name" style="${t.cover ? 'color:rgba(255,255,255,0.9);' : ''}">${escapeHTML(c?.username || 'Пользователь')}</span><span style="color:#F59E0B;font-size:12px;">★ ${cr}</span></div><span class="task-date" style="display:flex;align-items:center;gap:6px;${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}"><span>${formatDate(t.created_at)}</span><span style="display:flex;align-items:center;gap:2px;${t.cover ? 'color:rgba(255,255,255,0.7);' : 'color:#999;'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>${t.views || 0}</span>${isCreator() ? `<span style="background:#ef4444;color:white;padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;margin-left:8px;" class="btn-del-any" data-id="${t.id}">Удалить</span>` : ''}</span></div>
                 ${descLong ? `<div style="text-align:right;margin-top:4px;cursor:pointer;font-size:18px;color:#16A34A;" class="btn-expand" data-id="${t.id}">${isExpanded ? '▲' : '▼'}</div>` : ''}
             </div>
         </div>`;
@@ -355,9 +294,7 @@ async function renderBirzha() {
 
     document.getElementById('app').innerHTML = `<div class="app-container">
         ${bannerHTML}
-        <div style="padding:8px 0;">
-            <input class="input-field" id="search-input" placeholder="Поиск по ключевым словам..." value="${STATE.searchQuery}">
-        </div>
+        <div style="padding:8px 0;"><input class="input-field" id="search-input" placeholder="Поиск по ключевым словам..." value="${STATE.searchQuery}"></div>
         <div class="section-header"><div class="section-title">${STATE.searchQuery ? 'Результаты поиска' : 'Все задания'}</div><div class="task-count">${tasks.length} заданий</div></div>
         <div>${th || '<div class="empty-state">Нет заданий</div>'}</div>
         ${hasMore ? `<div style="text-align:center;padding:12px;"><button class="btn btn-outline" id="btn-load-more" style="width:auto;padding:10px 30px;">ЕЩЁ</button></div>` : ''}
@@ -368,43 +305,23 @@ async function renderBirzha() {
     document.getElementById('btn-banner-go')?.addEventListener('click', function(e) { e.stopPropagation(); if (tg) { tg.openLink(STATE.banners[STATE.currentBanner]?.telegram_link || 'https://t.me/FBK_MiniBusiness'); } else { window.open(STATE.banners[STATE.currentBanner]?.telegram_link || 'https://t.me/FBK_MiniBusiness', '_blank'); } });
     if (STATE.banners.length > 1) startBannerCarousel();
     document.getElementById('btn-load-more')?.addEventListener('click', () => { STATE.tasksPage++; renderBirzha(); });
-    document.querySelectorAll('.task-card').forEach(c => c.addEventListener('click', function(e) {
-        if (e.target.closest('.btn-expand') || e.target.closest('.sticky-banner-btn')) return;
-        showTaskDetail(c.dataset.id);
-    }));
-    document.querySelectorAll('.btn-expand').forEach(b => b.addEventListener('click', function(e) {
-        e.stopPropagation();
-        const tid = this.dataset.id;
-        STATE.expandedTaskId = STATE.expandedTaskId === tid ? null : tid;
-        renderBirzha();
-    }));
+    document.querySelectorAll('.task-card').forEach(c => c.addEventListener('click', function(e) { if (e.target.closest('.btn-expand') || e.target.closest('.sticky-banner-btn') || e.target.closest('.btn-del-any')) return; showTaskDetail(c.dataset.id); }));
+    document.querySelectorAll('.btn-expand').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); const tid = this.dataset.id; STATE.expandedTaskId = STATE.expandedTaskId === tid ? null : tid; renderBirzha(); }));
+    document.querySelectorAll('.btn-del-any').forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); if (confirm('Удалить это задание?')) { await supabase.from('tasks').delete().eq('id', b.dataset.id); await loadTasks(); renderBirzha(); } }));
 
     let searchTimeout;
-    document.getElementById('search-input')?.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(async () => {
-            STATE.searchQuery = this.value.trim();
-            STATE.tasksPage = 0;
-            await loadTasks();
-            renderBirzha();
-        }, 400);
-    });
+    document.getElementById('search-input')?.addEventListener('input', function() { clearTimeout(searchTimeout); searchTimeout = setTimeout(async () => { STATE.searchQuery = this.value.trim(); STATE.tasksPage = 0; await loadTasks(); renderBirzha(); }, 400); });
 }
 
 async function renderMyTasks() {
     STATE.currentScreen = 'mytasks'; stopBannerCarousel();
     await loadTasks();
     let th = '';
-    for (const t of STATE.myTasks) { th += `<div class="task-card" style="position:relative;overflow:hidden;${t.cover ? 'min-height:130px;' : ''}">${t.cover ? `<img src="${BUCKET_URL}${t.cover}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.35);z-index:0;">` : ''}<div style="position:relative;z-index:1;"><div class="task-top-row"><div class="task-title" style="${t.cover ? 'color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);' : ''}">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div><div class="task-desc" style="${t.cover ? 'color:rgba(255,255,255,0.85);' : ''}">${escapeHTML(t.description)}</div><div class="task-meta"><span class="task-date" style="display:flex;align-items:center;gap:6px;${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}">
-    <span>${formatDate(t.created_at)}</span>
-    <span style="display:flex;align-items:center;gap:2px;${t.cover ? 'color:rgba(255,255,255,0.7);' : 'color:#999;'}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        ${t.views || 0}
-    </span>
-</span><span style="background:#fef2f2;color:#ef4444;padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;" class="btn-del" data-id="${t.id}">Удалить</span></div></div></div>`; }
+    for (const t of STATE.myTasks) { th += `<div class="task-card" style="position:relative;overflow:hidden;${t.cover ? 'min-height:130px;' : ''}">${t.cover ? `<img src="${BUCKET_URL}${t.cover}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.35);z-index:0;">` : ''}<div style="position:relative;z-index:1;"><div class="task-top-row"><div class="task-title" style="${t.cover ? 'color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);' : ''}">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div><div class="task-desc" style="${t.cover ? 'color:rgba(255,255,255,0.85);' : ''}">${escapeHTML(t.description)}</div><div class="task-meta"><span class="task-date" style="display:flex;align-items:center;gap:6px;${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}"><span>${formatDate(t.created_at)}</span><span style="display:flex;align-items:center;gap:2px;${t.cover ? 'color:rgba(255,255,255,0.7);' : 'color:#999;'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>${t.views || 0}</span>${isCreator() ? `<span style="background:#ef4444;color:white;padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;margin-left:8px;" class="btn-del-any" data-id="${t.id}">Удалить</span>` : ''}<span style="background:#fef2f2;color:#ef4444;padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;" class="btn-del" data-id="${t.id}">Удалить</span></span></div></div></div>`; }
     document.getElementById('app').innerHTML = `<div class="app-container"><div class="user-header"><div class="user-name" style="color:white;font-weight:700;font-size:18px;">Мои задания</div></div><div>${th || '<div class="empty-state">Нет заданий</div>'}</div>${renderNav('mytasks')}</div>`;
     bindNav('mytasks');
     document.querySelectorAll('.btn-del').forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); if (confirm('Удалить?')) { await supabase.from('tasks').delete().eq('id', b.dataset.id); await loadTasks(); renderMyTasks(); } }));
+    document.querySelectorAll('.btn-del-any').forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); if (confirm('Удалить это задание?')) { await supabase.from('tasks').delete().eq('id', b.dataset.id); await loadTasks(); renderMyTasks(); } }));
 }
 
 async function renderBannerManagement() {
@@ -422,9 +339,8 @@ async function renderBannerManagement() {
 async function showTaskDetail(taskId) {
     const t = STATE.tasks.find(x => x.id == taskId); if (!t) return;
     const c = await getUserById(t.customer_id), r = c ? await getUserRating(c.id) : 0;
-    // Увеличиваем счётчик просмотров
-await supabase.from('tasks').update({ views: (t.views || 0) + 1 }).eq('id', t.id);
-t.views = (t.views || 0) + 1;
+    await supabase.from('tasks').update({ views: (t.views || 0) + 1 }).eq('id', t.id);
+    t.views = (t.views || 0) + 1;
     showModal(escapeHTML(t.title), `${t.cover ? `<div style="width:100%;height:180px;border-radius:12px;overflow:hidden;margin-bottom:12px;"><img src="${BUCKET_URL}${t.cover}" style="width:100%;height:100%;object-fit:cover;"></div>` : ''}<div style="font-size:24px;font-weight:800;color:#16A34A;margin:8px 0;">${formatPrice(t.price)} ₽</div><p style="color:#555;line-height:1.6;margin-bottom:12px;">${escapeHTML(t.description)}</p><div style="display:flex;align-items:center;gap:10px;padding:10px;background:#F0FDF4;border-radius:12px;margin-bottom:12px;cursor:pointer;" id="btn-cust"><div class="customer-avatar-mini" style="width:34px;height:34px;">${c?.avatar ? `<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">` : (c?.username || '?')[0].toUpperCase()}</div><div><div style="font-weight:600;">${escapeHTML(c?.username || 'Пользователь')}</div><div style="color:#F59E0B;">★ ${r}</div></div></div><button class="btn btn-primary" id="btn-resp">ОТКЛИКНУТЬСЯ</button>`);
     document.getElementById('btn-resp')?.addEventListener('click', () => { closeModal(); setTimeout(() => showProfile(t.customer_id), 300); });
     document.getElementById('btn-cust')?.addEventListener('click', () => { closeModal(); setTimeout(() => showProfile(t.customer_id), 300); });
@@ -436,12 +352,13 @@ async function showProfile(uid) {
     const { data: reviews } = await supabase.from('reviews').select('*').eq('user_id', u.id).order('created_at', { ascending: false }).limit(20);
     let rh = ''; if (reviews) for (const r of reviews) { const rv = await getUserById(r.reviewer_id); rh += `<div class="review-item"><div class="review-header"><span>${escapeHTML(rv?.username || 'Пользователь')}</span><span style="color:#FBBF24;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span></div>${r.comment ? `<div>${escapeHTML(r.comment)}</div>` : ''}</div>`; }
     const self = u.id === STATE.user?.id;
-    showModal('Профиль', `<div class="profile-card"><div class="profile-avatar-large">${u.avatar ? `<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:20px;object-fit:cover;">` : u.username[0].toUpperCase()}</div><div class="profile-name">${escapeHTML(u.username)}</div><div class="profile-role">${u.role === 'executor' ? 'Исполнитель' : u.role === 'customer' ? 'Заказчик' : 'Исполнитель и заказчик'}</div>${u.description ? `<div class="profile-desc">${escapeHTML(u.description)}</div>` : ''}<div class="profile-rating-display">★ ${rating}</div><div style="margin-top:8px;"><span style="background:#F0FDF4;padding:6px 12px;border-radius:8px;">ID: ${u.custom_id || 'Нет'}</span></div><div style="margin-top:6px;display:flex;gap:6px;justify-content:center;"><span style="background:#4ADE80;color:white;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-copy">Копировать ID</span>${u.telegram_username ? `<span style="background:#E0F2FE;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-tg">@${u.telegram_username}</span>` : ''}</div></div><div style="font-weight:700;margin:12px 0;">Отзывы</div>${rh || '<div class="empty-state">Нет отзывов</div>'}${self ? `<button class="btn btn-outline" id="btn-avatar">СМЕНИТЬ АВАТАРКУ</button><button class="btn btn-outline" id="btn-logout" style="color:#ef4444;">ВЫЙТИ</button>` : `<button class="btn btn-outline" id="btn-review-profile" style="color:#16A34A;">ОСТАВИТЬ ОТЗЫВ</button>`}`);
+    showModal('Профиль', `<div class="profile-card"><div class="profile-avatar-large">${u.avatar ? `<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:20px;object-fit:cover;">` : u.username[0].toUpperCase()}</div><div class="profile-name" style="display:flex;align-items:center;gap:6px;justify-content:center;">${escapeHTML(u.username)}${u.verified ? `<svg viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="3" width="20" height="20"><circle cx="12" cy="12" r="10" fill="none"/><polyline points="8 12 11 15 16 9" stroke="#22C55E" stroke-width="3" fill="none"/></svg>` : ''}</div><div class="profile-role">${u.role === 'executor' ? 'Исполнитель' : u.role === 'customer' ? 'Заказчик' : 'Исполнитель и заказчик'}</div>${u.description ? `<div class="profile-desc">${escapeHTML(u.description)}</div>` : ''}<div class="profile-rating-display">★ ${rating}</div>${u.verified ? `<div style="margin-top:8px;background:#F0FDF4;border:1px solid #22C55E;border-radius:12px;padding:10px;font-size:13px;color:#16A34A;text-align:center;"><svg viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="3" width="16" height="16" style="vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10" fill="none"/><polyline points="8 12 11 15 16 9" stroke="#22C55E" stroke-width="3" fill="none"/></svg>Заказчик является проверенным лицом. Данный заказчик был проверен самим директором данной биржи.</div>` : ''}<div style="margin-top:8px;"><span style="background:#F0FDF4;padding:6px 12px;border-radius:8px;">ID: ${u.custom_id || 'Нет'}</span></div><div style="margin-top:6px;display:flex;gap:6px;justify-content:center;"><span style="background:#4ADE80;color:white;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-copy">Копировать ID</span>${u.telegram_username ? `<span style="background:#E0F2FE;padding:6px 14px;border-radius:8px;cursor:pointer;" id="btn-tg">@${u.telegram_username}</span>` : ''}</div></div><div style="font-weight:700;margin:12px 0;">Отзывы</div>${rh || '<div class="empty-state">Нет отзывов</div>'}${isCreator() && !self ? `<button class="btn btn-outline" id="btn-verify" style="color:#16A34A;border-color:#16A34A;"><svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" width="18" height="18" style="vertical-align:middle;margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg>${u.verified ? 'СНЯТЬ ПРОВЕРКУ' : 'ПРОВЕРЕНО'}</button>` : ''}${self ? `<button class="btn btn-outline" id="btn-avatar">СМЕНИТЬ АВАТАРКУ</button><button class="btn btn-outline" id="btn-logout" style="color:#ef4444;">ВЫЙТИ</button>` : `<button class="btn btn-outline" id="btn-review-profile" style="color:#16A34A;">ОСТАВИТЬ ОТЗЫВ</button>`}`);
     document.getElementById('btn-copy')?.addEventListener('click', () => { navigator.clipboard?.writeText(u.custom_id); alert('ID скопирован: ' + u.custom_id); });
     document.getElementById('btn-tg')?.addEventListener('click', () => { if (tg) { tg.openLink('https://t.me/' + u.telegram_username); } else { window.open('https://t.me/' + u.telegram_username, '_blank'); } });
     document.getElementById('btn-logout')?.addEventListener('click', () => { closeModal(); logout(); });
     document.getElementById('btn-review-profile')?.addEventListener('click', () => { closeModal(); setTimeout(() => showReviewModal(null, u.id), 300); });
     document.getElementById('btn-avatar')?.addEventListener('click', () => { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; const path = await uploadImage(f, 'avatars/' + Date.now()); if (path) { await supabase.from('users').update({ avatar: path }).eq('id', STATE.user.id); STATE.user.avatar = path; localStorage.setItem('gfUser', JSON.stringify(STATE.user)); closeModal(); showProfile(); } }); inp.click(); });
+    document.getElementById('btn-verify')?.addEventListener('click', async () => { await supabase.from('users').update({ verified: !u.verified }).eq('id', u.id); u.verified = !u.verified; closeModal(); setTimeout(() => showProfile(uid), 300); });
 }
 
 (async function () { await loadUser(); render(); })();
