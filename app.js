@@ -41,10 +41,9 @@ async function loadAllData() { await Promise.all([loadTasks(), loadBanners()]); 
 
 async function getUserById(id) {
     if (!id) return null;
-    // Всегда берём свежие данные из базы
     const { data } = await supabase.from('users').select('*').eq('id', id).single();
     if (data) STATE.usersCache[id] = data;
-    return data || STATE.usersCache[id] || null;
+    return data || null;
 }
 
 async function getUserRating(uid) {
@@ -154,33 +153,20 @@ function showModal(title, html) {
     document.body.appendChild(o);
 }
 function closeModal() { document.querySelectorAll('.modal-overlay').forEach(e => { e.style.opacity = '0'; setTimeout(() => e.remove(), 200); }); }
-
 function showReviewModal(taskId, userId) {
     const task = userId ? { id: null, title: 'Пользователь', customer_id: userId } : STATE.tasks.find(t => t.id == taskId);
     if (!task) return;
-    showModal('Отзыв', `
-        <div class="stars-row" id="stars">${[1,2,3,4,5].map(i => `<button class="star-btn active" data-s="${i}"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></button>`).join('')}</div>
-        <div class="input-group"><label class="input-label">Комментарий</label><textarea class="input-field" id="mr-comment" rows="2"></textarea></div>
-        <button class="btn btn-primary" id="btn-submit-r">ОСТАВИТЬ</button><button class="btn btn-outline" onclick="closeModal()">ОТМЕНА</button>
-    `);
+    showModal('Отзыв', `<div class="stars-row" id="stars">${[1,2,3,4,5].map(i => `<button class="star-btn active" data-s="${i}"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></button>`).join('')}</div><div class="input-group"><label class="input-label">Комментарий</label><textarea class="input-field" id="mr-comment" rows="2"></textarea></div><button class="btn btn-primary" id="btn-submit-r">ОСТАВИТЬ</button><button class="btn btn-outline" onclick="closeModal()">ОТМЕНА</button>`);
     let rat=5;
     document.querySelectorAll('#stars .star-btn').forEach((b,i)=>{b.addEventListener('click',()=>{rat=i+1;document.querySelectorAll('#stars .star-btn').forEach((x,j)=>x.classList.toggle('active',j<rat));});});
     document.getElementById('btn-submit-r').addEventListener('click',async()=>{
         const c=document.getElementById('mr-comment').value.trim();
         const {error}=await supabase.from('reviews').insert({task_id:task.id||null,reviewer_id:STATE.user.id,user_id:task.customer_id,rating:rat,comment:c});
-        if(error){alert('Ошибка или отзыв уже оставлен.');return;}
-        closeModal();renderHome();
+        if(error){alert('Ошибка или отзыв уже оставлен.');return;} closeModal();renderHome();
     });
 }
-
 function showCreateModal() {
-    showModal('Создать задание', `
-        <div class="input-group"><label class="input-label">Обложка</label><div class="image-upload-area" id="cover-area" style="height:140px;"><div class="image-upload-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="#bbb" width="28"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Загрузить обложку</div></div><input type="file" id="cover-input" accept="image/*" style="display:none;"></div>
-        <div class="input-group"><label class="input-label">Название</label><input class="input-field" id="mt-title" maxlength="200"></div>
-        <div class="input-group"><label class="input-label">Описание</label><textarea class="input-field" id="mt-desc" rows="3" maxlength="2000"></textarea></div>
-        <div class="input-group"><label class="input-label">Цена (от 5₽)</label><input class="input-field" id="mt-price" type="number" min="5" placeholder="5000"></div>
-        <button class="btn btn-primary" id="btn-submit">ОПУБЛИКОВАТЬ</button>
-    `);
+    showModal('Создать задание', `<div class="input-group"><label class="input-label">Обложка</label><div class="image-upload-area" id="cover-area" style="height:140px;"><div class="image-upload-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="#bbb" width="28"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Загрузить обложку</div></div><input type="file" id="cover-input" accept="image/*" style="display:none;"></div><div class="input-group"><label class="input-label">Название</label><input class="input-field" id="mt-title" maxlength="200"></div><div class="input-group"><label class="input-label">Описание</label><textarea class="input-field" id="mt-desc" rows="3" maxlength="2000"></textarea></div><div class="input-group"><label class="input-label">Цена (от 5₽)</label><input class="input-field" id="mt-price" type="number" min="5" placeholder="5000"></div><button class="btn btn-primary" id="btn-submit">ОПУБЛИКОВАТЬ</button>`);
     let cf = null;
     document.getElementById('cover-area')?.addEventListener('click', () => document.getElementById('cover-input').click());
     document.getElementById('cover-input')?.addEventListener('change', e => { cf = e.target.files[0]; if (cf) { const r = new FileReader(); r.onload = ev => document.getElementById('cover-area').innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`; r.readAsDataURL(cf); } });
@@ -192,16 +178,8 @@ function showCreateModal() {
         closeModal(); loadAllData().then(() => renderHome());
     });
 }
-
 function showBannerModal() {
-    showModal('Добавить баннер', `
-        <div class="input-group"><label class="input-label">Изображение</label><div class="image-upload-area" id="b-img" style="height:120px;"><div class="image-upload-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="#bbb" width="28"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Загрузить</div></div><input type="file" id="b-img-input" accept="image/*" style="display:none;"></div>
-        <div class="input-group"><label class="input-label">Название</label><input class="input-field" id="mb-title"></div>
-        <div class="input-group"><label class="input-label">Описание</label><textarea class="input-field" id="mb-desc" rows="2"></textarea></div>
-        <div class="input-group"><label class="input-label">Цена (от 5₽)</label><input class="input-field" id="mb-price" type="number" min="5" placeholder="50"></div>
-        <div class="input-group"><label class="input-label">Telegram-ссылка</label><input class="input-field" id="mb-link" placeholder="https://t.me/username"></div>
-        <button class="btn btn-primary" id="btn-save">СОХРАНИТЬ</button>
-    `);
+    showModal('Добавить баннер', `<div class="input-group"><label class="input-label">Изображение</label><div class="image-upload-area" id="b-img" style="height:120px;"><div class="image-upload-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="#bbb" width="28"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Загрузить</div></div><input type="file" id="b-img-input" accept="image/*" style="display:none;"></div><div class="input-group"><label class="input-label">Название</label><input class="input-field" id="mb-title"></div><div class="input-group"><label class="input-label">Описание</label><textarea class="input-field" id="mb-desc" rows="2"></textarea></div><div class="input-group"><label class="input-label">Цена (от 5₽)</label><input class="input-field" id="mb-price" type="number" min="5" placeholder="50"></div><div class="input-group"><label class="input-label">Telegram-ссылка</label><input class="input-field" id="mb-link" placeholder="https://t.me/username"></div><button class="btn btn-primary" id="btn-save">СОХРАНИТЬ</button>`);
     let bf = null;
     document.getElementById('b-img')?.addEventListener('click', () => document.getElementById('b-img-input').click());
     document.getElementById('b-img-input')?.addEventListener('change', e => { bf = e.target.files[0]; if (bf) { const r = new FileReader(); r.onload = ev => document.getElementById('b-img').innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`; r.readAsDataURL(bf); } });
@@ -216,48 +194,20 @@ function showBannerModal() {
 
 function renderNav(screen) {
     const screens = ['home','birzha','create','mytasks','profile'];
-    const icons = [
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
-        '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>',
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
-    ];
+    const icons = ['<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>','<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'];
     const labels = ['Главная','Биржа','','Мои','Профиль'];
     const idx = screens.indexOf(screen);
     let html = '';
-    for (let i = 0; i < 5; i++) {
-        const isCenter = i === 2;
-        html += `<button class="nav-btn ${isCenter ? 'nav-btn-center' : ''} ${i === idx ? 'active' : ''}" data-screen="${screens[i]}">${icons[i]}${isCenter ? '' : `<span>${labels[i]}</span>`}</button>`;
-    }
+    for (let i = 0; i < 5; i++) { html += `<button class="nav-btn ${i===2?'nav-btn-center':''} ${i===idx?'active':''}" data-screen="${screens[i]}">${icons[i]}${i===2?'':`<span>${labels[i]}</span>`}</button>`; }
     return `<div class="bottom-nav">${html}</div>`;
 }
-
-function bindNav(screen) {
-    document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => {
-        const s = b.dataset.screen;
-        if (s === 'home') renderHome();
-        else if (s === 'birzha') { STATE.searchQuery = ''; STATE.tasksPage = 0; renderBirzha(); }
-        else if (s === 'create') showCreateModal();
-        else if (s === 'mytasks') renderMyTasks();
-        else if (s === 'profile') showProfile();
-    }));
-}
+function bindNav(screen) { document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => { const s = b.dataset.screen; if (s==='home') renderHome(); else if (s==='birzha') { STATE.searchQuery=''; STATE.tasksPage=0; renderBirzha(); } else if (s==='create') showCreateModal(); else if (s==='mytasks') renderMyTasks(); else if (s==='profile') showProfile(); })); }
 
 async function renderHome() {
     STATE.currentScreen = 'home'; stopBannerCarousel();
     await loadAllData(); await deleteExpiredBanners();
     const u = STATE.user, rating = await getUserRating(u.id);
-    document.getElementById('app').innerHTML = `<div class="app-container">
-        <div class="user-header"><div class="user-header-top"><div class="user-avatar" id="btn-profile">${u.avatar?`<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:15px;object-fit:cover;">`:u.username[0].toUpperCase()}</div><div class="user-greeting"><div class="user-name">${escapeHTML(u.username)}</div><div class="user-role-badge">${u.role==='executor'?'Исполнитель':u.role==='customer'?'Заказчик':'Исполнитель и заказчик'}</div></div><div class="user-rating-mini">★ ${rating}</div></div></div>
-        <div class="actions-grid">
-            <div class="action-card" id="btn-create"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="action-card-title">Создать задание</div></div>
-            <div class="action-card" id="btn-my-profile"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div><div class="action-card-title">Мой профиль</div></div>
-            ${isCreator()?`<div class="action-card" id="btn-banners"><div class="action-card-icon" style="background:#4ADE80;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="action-card-title">Баннеры</div></div>`:''}
-            <div class="action-card" id="btn-support"><div class="action-card-icon" style="background:#3B82F6;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="action-card-title">Тех-поддержка</div></div>
-        </div>
-        ${renderNav('home')}
-    </div>`;
+    document.getElementById('app').innerHTML = `<div class="app-container"><div class="user-header"><div class="user-header-top"><div class="user-avatar" id="btn-profile">${u.avatar?`<img src="${BUCKET_URL}${u.avatar}" style="width:100%;height:100%;border-radius:15px;object-fit:cover;">`:u.username[0].toUpperCase()}</div><div class="user-greeting"><div class="user-name">${escapeHTML(u.username)}</div><div class="user-role-badge">${u.role==='executor'?'Исполнитель':u.role==='customer'?'Заказчик':'Исполнитель и заказчик'}</div></div><div class="user-rating-mini">★ ${rating}</div></div></div><div class="actions-grid"><div class="action-card" id="btn-create"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><div class="action-card-title">Создать задание</div></div><div class="action-card" id="btn-my-profile"><div class="action-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg></div><div class="action-card-title">Мой профиль</div></div>${isCreator()?`<div class="action-card" id="btn-banners"><div class="action-card-icon" style="background:#4ADE80;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="action-card-title">Баннеры</div></div>`:''}<div class="action-card" id="btn-support"><div class="action-card-icon" style="background:#3B82F6;"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="action-card-title">Тех-поддержка</div></div></div>${renderNav('home')}</div>`;
     bindNav('home');
     document.getElementById('btn-profile')?.addEventListener('click', () => showProfile());
     document.getElementById('btn-my-profile')?.addEventListener('click', () => showProfile());
@@ -273,42 +223,22 @@ async function renderBirzha() {
     const start = STATE.tasksPage * STATE.tasksPerPage;
     const pageTasks = tasks.slice(0, start + STATE.tasksPerPage);
     const hasMore = tasks.length > pageTasks.length;
-
     const bannerHTML = STATE.banners.length ? `<div class="sticky-banner" id="sticky-banner"><div style="position:relative;overflow:hidden;border-radius:16px;min-height:130px;">${STATE.banners[0]?.image?`<img class="sticky-banner-image" src="${BUCKET_URL}${STATE.banners[0].image}" alt="">`:''}<div class="sticky-banner-body">${STATE.banners[0]?.image?`<div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div>`:`<div style="background:#1a1a1a;margin:-14px -16px;padding:14px 16px;"><div class="sticky-banner-title">${escapeHTML(STATE.banners[0]?.title||'')}</div><div class="sticky-banner-desc">${escapeHTML(STATE.banners[0]?.description||'')}</div></div>`}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><span class="sticky-banner-price">${formatPrice(STATE.banners[0]?.price||0)} ₽</span><button class="sticky-banner-btn" id="btn-banner-go">ПЕРЕЙТИ</button></div></div></div></div>` : '';
-
     let th = '';
     for (const t of pageTasks) {
         const c = await getUserById(t.customer_id), cr = c ? await getUserRating(c.id) : 0;
         const isExpanded = STATE.expandedTaskId === t.id;
         const descLong = t.description && t.description.length > 120;
-        th += `<div class="task-card" data-id="${t.id}" style="position:relative;overflow:hidden;${t.cover ? 'min-height:130px;' : ''}">
-            ${t.cover ? `<img src="${BUCKET_URL}${t.cover}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.35);z-index:0;">` : ''}
-            <div style="position:relative;z-index:1;">
-                <div class="task-top-row"><div class="task-title" style="${t.cover ? 'color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);' : ''}">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div>
-                <div class="task-desc" style="${t.cover ? 'color:rgba(255,255,255,0.85);' : ''}">${isExpanded ? escapeHTML(t.description) : escapeHTML(t.description||'').substring(0, 120) + (descLong ? '...' : '')}</div>
-                <div class="task-meta"><div class="task-customer"><div class="customer-avatar-mini">${c?.avatar ? `<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">` : (c?.username || '?')[0].toUpperCase()}</div><span class="customer-name" style="${t.cover ? 'color:rgba(255,255,255,0.9);' : ''}">${escapeHTML(c?.username || 'Пользователь')}</span><span style="color:#F59E0B;font-size:12px;">★ ${cr}</span></div><span class="task-date" style="display:flex;align-items:center;gap:6px;${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}"><span>${formatDate(t.created_at)}</span><span style="display:flex;align-items:center;gap:2px;${t.cover ? 'color:rgba(255,255,255,0.7);' : 'color:#999;'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>${t.views || 0}</span>${isCreator() ? `<span style="background:#ef4444;color:white;padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;margin-left:8px;" class="btn-del-any" data-id="${t.id}">Удалить</span>` : ''}</span></div>
-                ${descLong ? `<div style="text-align:right;margin-top:4px;cursor:pointer;font-size:18px;color:#16A34A;" class="btn-expand" data-id="${t.id}">${isExpanded ? '▲' : '▼'}</div>` : ''}
-            </div>
-        </div>`;
+        th += `<div class="task-card" data-id="${t.id}" style="position:relative;overflow:hidden;${t.cover ? 'min-height:130px;' : ''}">${t.cover ? `<img src="${BUCKET_URL}${t.cover}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(0.35);z-index:0;">` : ''}<div style="position:relative;z-index:1;"><div class="task-top-row"><div class="task-title" style="${t.cover ? 'color:white;text-shadow:0 1px 3px rgba(0,0,0,0.6);' : ''}">${escapeHTML(t.title)}</div><div class="task-price">${formatPrice(t.price)} ₽</div></div><div class="task-desc" style="${t.cover ? 'color:rgba(255,255,255,0.85);' : ''}">${isExpanded ? escapeHTML(t.description) : escapeHTML(t.description||'').substring(0, 120) + (descLong ? '...' : '')}</div><div class="task-meta"><div class="task-customer"><div class="customer-avatar-mini">${c?.avatar ? `<img src="${BUCKET_URL}${c.avatar}" style="width:100%;height:100%;border-radius:9px;object-fit:cover;">` : (c?.username || '?')[0].toUpperCase()}</div><span class="customer-name" style="${t.cover ? 'color:rgba(255,255,255,0.9);' : ''}">${escapeHTML(c?.username || 'Пользователь')}</span><span style="color:#F59E0B;font-size:12px;">★ ${cr}</span></div><span class="task-date" style="display:flex;align-items:center;gap:6px;${t.cover ? 'color:rgba(255,255,255,0.7);' : ''}"><span>${formatDate(t.created_at)}</span><span style="display:flex;align-items:center;gap:2px;${t.cover ? 'color:rgba(255,255,255,0.7);' : 'color:#999;'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>${t.views || 0}</span>${isCreator() ? `<span style="background:#ef4444;color:white;padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;margin-left:8px;" class="btn-del-any" data-id="${t.id}">Удалить</span>` : ''}</span></div>${descLong ? `<div style="text-align:right;margin-top:4px;cursor:pointer;font-size:18px;color:#16A34A;" class="btn-expand" data-id="${t.id}">${isExpanded ? '▲' : '▼'}</div>` : ''}</div></div>`;
     }
-
-    document.getElementById('app').innerHTML = `<div class="app-container">
-        ${bannerHTML}
-        <div style="padding:8px 0;"><input class="input-field" id="search-input" placeholder="Поиск по ключевым словам..." value="${STATE.searchQuery}"></div>
-        <div class="section-header"><div class="section-title">${STATE.searchQuery ? 'Результаты поиска' : 'Все задания'}</div><div class="task-count">${tasks.length} заданий</div></div>
-        <div>${th || '<div class="empty-state">Нет заданий</div>'}</div>
-        ${hasMore ? `<div style="text-align:center;padding:12px;"><button class="btn btn-outline" id="btn-load-more" style="width:auto;padding:10px 30px;">ЕЩЁ</button></div>` : ''}
-        ${renderNav('birzha')}
-    </div>`;
+    document.getElementById('app').innerHTML = `<div class="app-container">${bannerHTML}<div style="padding:8px 0;"><input class="input-field" id="search-input" placeholder="Поиск по ключевым словам..." value="${STATE.searchQuery}"></div><div class="section-header"><div class="section-title">${STATE.searchQuery ? 'Результаты поиска' : 'Все задания'}</div><div class="task-count">${tasks.length} заданий</div></div><div>${th || '<div class="empty-state">Нет заданий</div>'}</div>${hasMore ? `<div style="text-align:center;padding:12px;"><button class="btn btn-outline" id="btn-load-more" style="width:auto;padding:10px 30px;">ЕЩЁ</button></div>` : ''}${renderNav('birzha')}</div>`;
     bindNav('birzha');
-
     document.getElementById('btn-banner-go')?.addEventListener('click', function(e) { e.stopPropagation(); if (tg) { tg.openLink(STATE.banners[STATE.currentBanner]?.telegram_link || 'https://t.me/FBK_MiniBusiness'); } else { window.open(STATE.banners[STATE.currentBanner]?.telegram_link || 'https://t.me/FBK_MiniBusiness', '_blank'); } });
     if (STATE.banners.length > 1) startBannerCarousel();
     document.getElementById('btn-load-more')?.addEventListener('click', () => { STATE.tasksPage++; renderBirzha(); });
     document.querySelectorAll('.task-card').forEach(c => c.addEventListener('click', function(e) { if (e.target.closest('.btn-expand') || e.target.closest('.sticky-banner-btn') || e.target.closest('.btn-del-any')) return; showTaskDetail(c.dataset.id); }));
     document.querySelectorAll('.btn-expand').forEach(b => b.addEventListener('click', function(e) { e.stopPropagation(); const tid = this.dataset.id; STATE.expandedTaskId = STATE.expandedTaskId === tid ? null : tid; renderBirzha(); }));
     document.querySelectorAll('.btn-del-any').forEach(b => b.addEventListener('click', async e => { e.stopPropagation(); if (confirm('Удалить это задание?')) { await supabase.from('tasks').delete().eq('id', b.dataset.id); await loadTasks(); renderBirzha(); } }));
-
     let searchTimeout;
     document.getElementById('search-input')?.addEventListener('input', function() { clearTimeout(searchTimeout); searchTimeout = setTimeout(async () => { STATE.searchQuery = this.value.trim(); STATE.tasksPage = 0; await loadTasks(); renderBirzha(); }, 400); });
 }
@@ -347,13 +277,17 @@ async function showTaskDetail(taskId) {
 }
 
 async function showProfile(uid) {
-    const u = uid ? await getUserById(uid) : STATE.user;
-if (!u) return;
-// Принудительно обновляем из базы чтобы verified не слетал
-if (uid) {
-    const { data: fresh } = await supabase.from('users').select('*').eq('id', uid).single();
-    if (fresh) { STATE.usersCache[uid] = fresh; Object.assign(u, fresh); }
-}
+    let u;
+    if (uid) {
+        const { data } = await supabase.from('users').select('*').eq('id', uid).single();
+        u = data;
+    } else {
+        const { data } = await supabase.from('users').select('*').eq('id', STATE.user.id).single();
+        u = data;
+        if (data) { STATE.user = data; localStorage.setItem('gfUser', JSON.stringify(data)); }
+    }
+    if (!u) return;
+
     const rating = await getUserRating(u.id);
     const { data: reviews } = await supabase.from('reviews').select('*').eq('user_id', u.id).order('created_at', { ascending: false }).limit(20);
     let rh = ''; if (reviews) for (const r of reviews) { const rv = await getUserById(r.reviewer_id); rh += `<div class="review-item"><div class="review-header"><span>${escapeHTML(rv?.username || 'Пользователь')}</span><span style="color:#FBBF24;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span></div>${r.comment ? `<div>${escapeHTML(r.comment)}</div>` : ''}</div>`; }
@@ -365,12 +299,12 @@ if (uid) {
     document.getElementById('btn-review-profile')?.addEventListener('click', () => { closeModal(); setTimeout(() => showReviewModal(null, u.id), 300); });
     document.getElementById('btn-avatar')?.addEventListener('click', () => { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; const path = await uploadImage(f, 'avatars/' + Date.now()); if (path) { await supabase.from('users').update({ avatar: path }).eq('id', STATE.user.id); STATE.user.avatar = path; localStorage.setItem('gfUser', JSON.stringify(STATE.user)); closeModal(); showProfile(); } }); inp.click(); });
     document.getElementById('btn-verify')?.addEventListener('click', async () => {
-    await supabase.from('users').update({ verified: !u.verified }).eq('id', u.id);
-    u.verified = !u.verified;
-    STATE.usersCache[u.id] = u; // Сохраняем в кеш
-    closeModal();
-    setTimeout(() => showProfile(uid), 300);
-});
+        await supabase.from('users').update({ verified: !u.verified }).eq('id', u.id);
+        u.verified = !u.verified;
+        STATE.usersCache[u.id] = u;
+        closeModal();
+        setTimeout(() => showProfile(uid), 300);
+    });
 }
 
 (async function () { await loadUser(); render(); })();
