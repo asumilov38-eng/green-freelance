@@ -41,10 +41,10 @@ async function loadAllData() { await Promise.all([loadTasks(), loadBanners()]); 
 
 async function getUserById(id) {
     if (!id) return null;
-    if (STATE.usersCache[id]) return STATE.usersCache[id];
+    // Всегда берём свежие данные из базы
     const { data } = await supabase.from('users').select('*').eq('id', id).single();
     if (data) STATE.usersCache[id] = data;
-    return data;
+    return data || STATE.usersCache[id] || null;
 }
 
 async function getUserRating(uid) {
@@ -347,7 +347,13 @@ async function showTaskDetail(taskId) {
 }
 
 async function showProfile(uid) {
-    const u = uid ? await getUserById(uid) : STATE.user; if (!u) return;
+    const u = uid ? await getUserById(uid) : STATE.user;
+if (!u) return;
+// Принудительно обновляем из базы чтобы verified не слетал
+if (uid) {
+    const { data: fresh } = await supabase.from('users').select('*').eq('id', uid).single();
+    if (fresh) { STATE.usersCache[uid] = fresh; Object.assign(u, fresh); }
+}
     const rating = await getUserRating(u.id);
     const { data: reviews } = await supabase.from('reviews').select('*').eq('user_id', u.id).order('created_at', { ascending: false }).limit(20);
     let rh = ''; if (reviews) for (const r of reviews) { const rv = await getUserById(r.reviewer_id); rh += `<div class="review-item"><div class="review-header"><span>${escapeHTML(rv?.username || 'Пользователь')}</span><span style="color:#FBBF24;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span></div>${r.comment ? `<div>${escapeHTML(r.comment)}</div>` : ''}</div>`; }
